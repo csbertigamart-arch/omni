@@ -572,3 +572,29 @@ class GoogleSheetsManager:
         except Exception as e:
             print(f"❌ Error uploading to Google Sheets: {str(e)}")
             return False
+
+
+    def refresh_spreadsheets(self) -> List[Dict]:
+        """Refresh and reload the list of available spreadsheets"""
+        try:
+            if not self.is_authenticated():
+                print("❌ Not authenticated for refreshing spreadsheets")
+                return []
+
+            print("🔄 Refreshing spreadsheet list from Google Drive...")
+            
+            # Clear cached data
+            self.settings["available_spreadsheets"] = []
+            self._save_settings()
+            
+            # Reload from Google Drive
+            self._load_available_spreadsheets()
+            
+            refreshed_count = len(self.settings.get("available_spreadsheets", []))
+            print(f"✅ Refreshed {refreshed_count} spreadsheets")
+            
+            return self.settings.get("available_spreadsheets", [])
+            
+        except Exception as e:
+            print(f"❌ Error refreshing spreadsheets: {str(e)}")
+            return []

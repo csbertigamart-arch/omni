@@ -19,7 +19,8 @@ export const useAppStore = defineStore("app", () => {
   });
   const shippingFiles = ref([]);
   const debugInfo = ref(null);
-  
+  const spreadsheets = ref([]);
+
   // New state for connection management
   const lastStatusUpdate = ref(null);
   const isReconnecting = ref(false);
@@ -49,7 +50,7 @@ export const useAppStore = defineStore("app", () => {
       connectionStatus.value = "error";
       addLog(`❌ Failed to connect to backend: ${error.message}`);
       console.error("Failed to initialize app:", error);
-      
+
       // Retry connection after delay
       setTimeout(() => {
         if (connectionStatus.value !== "connected") {
@@ -67,27 +68,65 @@ export const useAppStore = defineStore("app", () => {
     if (statusPollingInterval.value) {
       clearInterval(statusPollingInterval.value);
     }
-    
+
     // Auto-refresh status every 30 seconds, tapi hanya jika connected
     statusPollingInterval.value = setInterval(async () => {
-      if (!loading.value && document.visibilityState === "visible" && connectionStatus.value === "connected") {
+      if (
+        !loading.value &&
+        document.visibilityState === "visible" &&
+        connectionStatus.value === "connected"
+      ) {
         await loadStatus(false); // false = jangan log jika normal
       }
     }, 30000);
   }
 
+  // Di frontend/src/store/googleSheets.js - tambahkan method
+
+  async function refreshSpreadsheets() {
+    try {
+      loading.value = true;
+      console.log("🔄 Refreshing spreadsheets...");
+
+      const response = await apiService.get("/google/sheets/refresh");
+      if (response.success) {
+        spreadsheets.value = response.data;
+        console.log(`✅ Refreshed ${response.data.length} spreadsheets`);
+
+        // Show success message
+        if (typeof window.showToast === "function") {
+          window.showToast("success", "Success", response.message);
+        }
+
+        return response;
+      } else {
+        throw new Error(response.error || "Failed to refresh spreadsheets");
+      }
+    } catch (error) {
+      console.error("❌ Failed to refresh spreadsheets:", error);
+
+      // Show error message
+      if (typeof window.showToast === "function") {
+        window.showToast("error", "Error", error.message);
+      }
+
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
   async function loadStatus(shouldLog = true) {
     try {
       const response = await apiService.getStatus();
       if (response.success) {
         status.value = response.data;
-        
+
         // Handle reconnection
         if (response.reconnected || connectionStatus.value !== "connected") {
           connectionStatus.value = "connected";
           isReconnecting.value = true;
           addLog("✅ Backend reconnected successfully");
-          
+
           // Clear reconnection flag after a delay
           setTimeout(() => {
             isReconnecting.value = false;
@@ -96,7 +135,7 @@ export const useAppStore = defineStore("app", () => {
           // Only log normal status updates if not reconnecting and shouldLog is true
           addLog("✅ Status loaded successfully");
         }
-        
+
         lastStatusUpdate.value = new Date();
       } else {
         if (shouldLog) {
@@ -108,7 +147,7 @@ export const useAppStore = defineStore("app", () => {
       if (connectionStatus.value === "connected") {
         connectionStatus.value = "error";
         addLog(`❌ Connection lost: ${error.message}`);
-        
+
         // Try to reconnect
         setTimeout(() => {
           if (connectionStatus.value !== "connected") {
@@ -122,70 +161,75 @@ export const useAppStore = defineStore("app", () => {
     }
   }
 
-// Di method executeOperation - tidak perlu perubahan besar, 
-// karena sudah menggunakan parameter yang dikirim dari frontend
+  // Di method executeOperation - tidak perlu perubahan besar,
+  // karena sudah menggunakan parameter yang dikirim dari frontend
 
-async function executeOperation(operation, params = {}) {
-  try {
-    loading.value = true;
-    requestCount.value++;
-    
-    // Only log operation start if not a status check
-    if (!operation.includes('status') && operation !== 'get_token_status') {
-      addLog(`🔄 Executing operation: ${operation}`);
-    }
+  async function executeOperation(operation, params = {}) {
+    try {
+      loading.value = true;
+      requestCount.value++;
 
-    const response = await apiService.executeOperation(operation, params);
+      // Only log operation start if not a status check
+      if (!operation.includes("status") && operation !== "get_token_status") {
+        addLog(`🔄 Executing operation: ${operation}`);
+      }
 
-    if (response.success) {
-      // Only log success for significant operations
-      if (!operation.includes('status') && operation !== 'get_token_status') {
-        addLog(`✅ Operation ${operation} completed successfully`);
-        
-        // Log detailed results if available
-        if (response.results) {
-          for (const [platform, result] of Object.entries(response.results)) {
-            if (result && typeof result === 'object') {
-              const processed = result.processed || 0;
-              const skipped = result.skipped || 0;
-              const failed = result.failed || 0;
-              addLog(`   ${platform}: ${processed} processed, ${skipped} skipped, ${failed} failed`);
+      const response = await apiService.executeOperation(operation, params);
+
+      if (response.success) {
+        // Only log success for significant operations
+        if (!operation.includes("status") && operation !== "get_token_status") {
+          addLog(`✅ Operation ${operation} completed successfully`);
+
+          // Log detailed results if available
+          if (response.results) {
+            for (const [platform, result] of Object.entries(response.results)) {
+              if (result && typeof result === "object") {
+                const processed = result.processed || 0;
+                const skipped = result.skipped || 0;
+                const failed = result.failed || 0;
+                addLog(
+                  `   ${platform}: ${processed} processed, ${skipped} skipped, ${failed} failed`
+                );
+              }
             }
           }
         }
+        await loadStatus(false); // Refresh status after successful operation tanpa logging
+      } else {
+        errorCount.value++;
+        addLog(`❌ Operation ${operation} failed: ${response.error}`);
       }
-      await loadStatus(false); // Refresh status after successful operation tanpa logging
-    } else {
-      errorCount.value++;
-      addLog(`❌ Operation ${operation} failed: ${response.error}`);
-    }
 
-    return response;
-  } catch (error) {
-    errorCount.value++;
-    
-    // Check if this is a connection error
-    if (error.message.includes('Network error') || error.message.includes('cannot connect')) {
-      connectionStatus.value = "error";
-      addLog(`❌ Operation ${operation} error: ${error.message}`);
-      
-      // Try to reconnect
-      setTimeout(() => {
-        if (connectionStatus.value !== "connected") {
-          addLog("🔄 Attempting to reconnect after operation failure...");
-          loadStatus(true);
-        }
-      }, 3000);
-    } else {
-      addLog(`❌ Operation ${operation} error: ${error.message}`);
+      return response;
+    } catch (error) {
+      errorCount.value++;
+
+      // Check if this is a connection error
+      if (
+        error.message.includes("Network error") ||
+        error.message.includes("cannot connect")
+      ) {
+        connectionStatus.value = "error";
+        addLog(`❌ Operation ${operation} error: ${error.message}`);
+
+        // Try to reconnect
+        setTimeout(() => {
+          if (connectionStatus.value !== "connected") {
+            addLog("🔄 Attempting to reconnect after operation failure...");
+            loadStatus(true);
+          }
+        }, 3000);
+      } else {
+        addLog(`❌ Operation ${operation} error: ${error.message}`);
+      }
+
+      console.error("Operation failed:", error);
+      throw error;
+    } finally {
+      loading.value = false;
     }
-    
-    console.error("Operation failed:", error);
-    throw error;
-  } finally {
-    loading.value = false;
   }
-}
 
   // Modal management
   function showModal(modalType, platform = null) {
@@ -235,7 +279,11 @@ async function executeOperation(operation, params = {}) {
       if (response.success) {
         addLog(`✅ Shipping file ${filename} processed successfully`);
       } else {
-        addLog(`❌ Failed to process shipping file: ${response.message || response.error}`);
+        addLog(
+          `❌ Failed to process shipping file: ${
+            response.message || response.error
+          }`
+        );
       }
       return response;
     } catch (error) {
@@ -271,8 +319,11 @@ async function executeOperation(operation, params = {}) {
       loading.value = true;
       requestCount.value++;
       addLog(`🔄 Executing sheets operation: ${operation}`);
-      
-      const response = await apiService.executeSheetsOperation(operation, params);
+
+      const response = await apiService.executeSheetsOperation(
+        operation,
+        params
+      );
 
       if (response.success) {
         addLog(`✅ Sheets operation ${operation} completed successfully`);
@@ -293,7 +344,6 @@ async function executeOperation(operation, params = {}) {
     }
   }
 
-
   // Debug functions
   async function debugCheckFunctions() {
     try {
@@ -313,15 +363,21 @@ async function executeOperation(operation, params = {}) {
     // Auto-scroll to bottom if logs container exists dan logs tidak terlalu panjang
     setTimeout(() => {
       const logsContainer = document.querySelector(".logs-content");
-      if (logsContainer && logsContainer.scrollHeight - logsContainer.scrollTop - logsContainer.clientHeight < 100) {
+      if (
+        logsContainer &&
+        logsContainer.scrollHeight -
+          logsContainer.scrollTop -
+          logsContainer.clientHeight <
+          100
+      ) {
         logsContainer.scrollTop = logsContainer.scrollHeight;
       }
     }, 100);
-    
+
     // Limit log size to prevent memory issues (keep last 1000 lines)
-    const logLines = logs.value.split('\n');
+    const logLines = logs.value.split("\n");
     if (logLines.length > 1000) {
-      logs.value = logLines.slice(-500).join('\n');
+      logs.value = logLines.slice(-500).join("\n");
     }
   }
 
@@ -334,7 +390,7 @@ async function executeOperation(operation, params = {}) {
     addLog("🔄 Manual refresh triggered");
     await loadStatus(true);
   }
-  
+
   // Cleanup function
   function cleanup() {
     if (statusPollingInterval.value) {
@@ -342,11 +398,11 @@ async function executeOperation(operation, params = {}) {
       statusPollingInterval.value = null;
     }
   }
-
   return {
     // State
     status,
     loading,
+    refreshSpreadsheets,
     logs,
     connectionStatus,
     requestCount,
@@ -354,6 +410,7 @@ async function executeOperation(operation, params = {}) {
     modals,
     shippingFiles,
     debugInfo,
+    spreadsheets,
     lastStatusUpdate,
     isReconnecting,
 
@@ -378,6 +435,6 @@ async function executeOperation(operation, params = {}) {
     clearLogs,
     refreshAll,
     cleanup,
-    executeSheetsOperation
+    executeSheetsOperation,
   };
 });

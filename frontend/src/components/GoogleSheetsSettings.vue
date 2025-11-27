@@ -13,29 +13,47 @@
           <ProgressSpinner style="width: 30px; height: 30px" />
           <span>Loading authentication status...</span>
         </div>
-        
+
         <div v-else class="auth-status">
-          <div class="status-indicator" :class="authStatus.authenticated ? 'connected' : 'disconnected'">
-            <i :class="authStatus.authenticated ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"></i>
-            <span>{{ authStatus.authenticated ? 'Connected to Google' : 'Not Connected' }}</span>
+          <div
+            class="status-indicator"
+            :class="authStatus.authenticated ? 'connected' : 'disconnected'"
+          >
+            <i
+              :class="
+                authStatus.authenticated
+                  ? 'pi pi-check-circle'
+                  : 'pi pi-exclamation-circle'
+              "
+            ></i>
+            <span>{{
+              authStatus.authenticated ? "Connected to Google" : "Not Connected"
+            }}</span>
           </div>
-          
+
           <div v-if="!authStatus.has_credentials" class="credentials-warning">
             <i class="pi pi-exclamation-triangle"></i>
             <div>
               <p><strong>Google OAuth credentials not configured</strong></p>
-              <p>Please download credentials from Google Cloud Console and save as:</p>
+              <p>
+                Please download credentials from Google Cloud Console and save
+                as:
+              </p>
               <code>backend/config/google_credentials.json</code>
               <p class="help-text">
                 Steps:
-                <br>1. Go to <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a>
-                <br>2. Create credentials (OAuth 2.0 Client IDs)
-                <br>3. Set redirect URI to: <code>http://localhost:5000/api/google/auth/callback</code>
-                <br>4. Download JSON and save as above
+                <br />1. Go to
+                <a href="https://console.cloud.google.com" target="_blank"
+                  >Google Cloud Console</a
+                >
+                <br />2. Create credentials (OAuth 2.0 Client IDs) <br />3. Set
+                redirect URI to:
+                <code>http://localhost:5000/api/google/auth/callback</code>
+                <br />4. Download JSON and save as above
               </p>
             </div>
           </div>
-          
+
           <div class="auth-actions">
             <Button
               v-if="!authStatus.authenticated && authStatus.has_credentials"
@@ -45,7 +63,7 @@
               :loading="authLoading"
               class="p-button-success auth-btn"
             />
-            
+
             <Button
               v-if="authStatus.authenticated"
               icon="pi pi-sign-out"
@@ -54,7 +72,7 @@
               :loading="loading"
               class="p-button-danger auth-btn"
             />
-            
+
             <Button
               icon="pi pi-refresh"
               label="Refresh Status"
@@ -93,7 +111,6 @@
                   placeholder="Select spreadsheet for wallet reports"
                   class="w-full spreadsheet-dropdown"
                   :filter="false"
-                  filterPlaceholder="Search spreadsheets..."
                   :showClear="false"
                   :disabled="spreadsheets.length === 0"
                 >
@@ -108,24 +125,37 @@
                     <div class="spreadsheet-option">
                       <i class="pi pi-file-excel"></i>
                       <div class="option-details">
-                        <div class="option-name">{{ slotProps.option.name }}</div>
+                        <div class="option-name">
+                          {{ slotProps.option.name }}
+                        </div>
                         <div class="option-id">{{ slotProps.option.id }}</div>
                       </div>
                     </div>
                   </template>
                 </Dropdown>
                 <small class="helper-text">
-                  Spreadsheet untuk menyimpan laporan wallet transactions dari Shopee
+                  Spreadsheet untuk menyimpan laporan wallet transactions dari
+                  Shopee
                 </small>
               </div>
-              
-              <Button
-                icon="pi pi-plus"
-                label="Create New"
-                @click="createNewSpreadsheet('wallet')"
-                :loading="creatingSpreadsheet"
-                class="p-button-outlined p-button-sm create-btn"
-              />
+
+              <div class="spreadsheet-actions">
+                <Button
+                  icon="pi pi-refresh"
+                  label="Refresh List"
+                  @click="refreshSpreadsheets"
+                  :loading="loading"
+                  class="p-button-outlined p-button-sm refresh-btn"
+                  :disabled="loading"
+                />
+                <Button
+                  icon="pi pi-plus"
+                  label="Create New"
+                  @click="createNewSpreadsheet('wallet')"
+                  :loading="creatingSpreadsheet"
+                  class="p-button-outlined p-button-sm create-btn"
+                />
+              </div>
             </div>
           </div>
 
@@ -145,7 +175,6 @@
                   placeholder="Select spreadsheet for shipping fee reports"
                   class="w-full spreadsheet-dropdown"
                   :filter="false"
-                  filterPlaceholder="Search spreadsheets..."
                   :showClear="false"
                   :disabled="spreadsheets.length === 0"
                 >
@@ -160,24 +189,37 @@
                     <div class="spreadsheet-option">
                       <i class="pi pi-file-excel"></i>
                       <div class="option-details">
-                        <div class="option-name">{{ slotProps.option.name }}</div>
+                        <div class="option-name">
+                          {{ slotProps.option.name }}
+                        </div>
                         <div class="option-id">{{ slotProps.option.id }}</div>
                       </div>
                     </div>
                   </template>
                 </Dropdown>
                 <small class="helper-text">
-                  Spreadsheet untuk menyimpan laporan perhitungan shipping fee dari Shopee
+                  Spreadsheet untuk menyimpan laporan perhitungan shipping fee
+                  dari Shopee
                 </small>
               </div>
-              
-              <Button
-                icon="pi pi-plus"
-                label="Create New"
-                @click="createNewSpreadsheet('shipping')"
-                :loading="creatingSpreadsheet"
-                class="p-button-outlined p-button-sm create-btn"
-              />
+
+              <div class="spreadsheet-actions">
+                <Button
+                  icon="pi pi-refresh"
+                  label="Refresh List"
+                  @click="refreshSpreadsheets"
+                  :loading="loading"
+                  class="p-button-outlined p-button-sm refresh-btn"
+                  :disabled="loading"
+                />
+                <Button
+                  icon="pi pi-plus"
+                  label="Create New"
+                  @click="createNewSpreadsheet('shipping')"
+                  :loading="creatingSpreadsheet"
+                  class="p-button-outlined p-button-sm create-btn"
+                />
+              </div>
             </div>
           </div>
 
@@ -198,8 +240,18 @@
             />
           </div>
 
-          <div v-if="saveResult" class="save-result" :class="saveResult.success ? 'success' : 'error'">
-            <i :class="saveResult.success ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"></i>
+          <div
+            v-if="saveResult"
+            class="save-result"
+            :class="saveResult.success ? 'success' : 'error'"
+          >
+            <i
+              :class="
+                saveResult.success
+                  ? 'pi pi-check-circle'
+                  : 'pi pi-exclamation-circle'
+              "
+            ></i>
             <span>{{ saveResult.message }}</span>
           </div>
         </div>
@@ -216,9 +268,14 @@
       <div class="create-dialog">
         <div class="dialog-description">
           <i class="pi pi-info-circle"></i>
-          <p>Create a new Google Spreadsheet for {{ createFor === 'wallet' ? 'Wallet Reports' : 'Shipping Fee Reports' }}</p>
+          <p>
+            Create a new Google Spreadsheet for
+            {{
+              createFor === "wallet" ? "Wallet Reports" : "Shipping Fee Reports"
+            }}
+          </p>
         </div>
-        
+
         <div class="form-group">
           <label>Spreadsheet Name</label>
           <InputText
@@ -227,12 +284,10 @@
             class="w-full"
             :class="{ 'p-invalid': !newSpreadsheetName }"
           />
-          <small class="helper-text">
-            Suggested: {{ suggestedName }}
-          </small>
+          <small class="helper-text"> Suggested: {{ suggestedName }} </small>
         </div>
       </div>
-      
+
       <template #footer>
         <Button
           label="Cancel"
@@ -254,404 +309,446 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useToast } from 'primevue/usetoast'
-import Card from 'primevue/card'
-import Button from 'primevue/button'
-import Dropdown from 'primevue/dropdown'
-import InputText from 'primevue/inputtext'
-import Dialog from 'primevue/dialog'
-import ProgressSpinner from 'primevue/progressspinner'
+import { ref, computed, onMounted, watch } from "vue";
+import { useToast } from "primevue/usetoast";
+import { useGoogleSheetsStore } from "../store/googleSheets";
+import Card from "primevue/card";
+import Button from "primevue/button";
+import Dropdown from "primevue/dropdown";
+import InputText from "primevue/inputtext";
+import Dialog from "primevue/dialog";
+import ProgressSpinner from "primevue/progressspinner";
 
 export default {
-  name: 'GoogleSheetsSettings',
+  name: "GoogleSheetsSettings",
   components: {
     Card,
     Button,
     Dropdown,
     InputText,
     Dialog,
-    ProgressSpinner
+    ProgressSpinner,
   },
   setup() {
-    const toast = useToast()
-    
+    const toast = useToast();
+    const googleSheetsStore = useGoogleSheetsStore();
+
     const authStatus = ref({
       authenticated: false,
       settings: {},
-      has_credentials: false
-    })
-    const spreadsheets = ref([])
-    const loading = ref(false)
-    const authLoading = ref(false)
-    const saving = ref(false)
-    const testing = ref(false)
-    const creatingSpreadsheet = ref(false)
-    
-    const selectedWalletSpreadsheet = ref('')
-    const selectedShippingSpreadsheet = ref('')
-    const saveResult = ref(null)
-    
-    const showCreateDialog = ref(false)
-    const createFor = ref('wallet')
-    const newSpreadsheetName = ref('')
+      has_credentials: false,
+    });
+    const spreadsheets = ref([]);
+    const loading = ref(false);
+    const authLoading = ref(false);
+    const saving = ref(false);
+    const testing = ref(false);
+    const creatingSpreadsheet = ref(false);
+
+    const selectedWalletSpreadsheet = ref("");
+    const selectedShippingSpreadsheet = ref("");
+    const saveResult = ref(null);
+
+    const showCreateDialog = ref(false);
+    const createFor = ref("wallet");
+    const newSpreadsheetName = ref("");
 
     const suggestedName = computed(() => {
-      const baseName = createFor.value === 'wallet' ? 'Wallet_Reports' : 'Shipping_Fee_Reports'
-      const timestamp = new Date().toISOString().split('T')[0]
-      return `${baseName}_${timestamp}`
-    })
+      const baseName =
+        createFor.value === "wallet"
+          ? "Wallet_Reports"
+          : "Shipping_Fee_Reports";
+      const timestamp = new Date().toISOString().split("T")[0];
+      return `${baseName}_${timestamp}`;
+    });
+
+    // PERBAIKAN: Method refreshSpreadsheets yang benar
+    const refreshSpreadsheets = async () => {
+      try {
+        loading.value = true;
+        await refreshAuthStatus(); // Refresh auth status first
+
+        // Gunakan store yang sudah diinisialisasi
+        await googleSheetsStore.loadSpreadsheets();
+
+        // Update local spreadsheets data dari store
+        spreadsheets.value = googleSheetsStore.spreadsheets;
+
+        toast.add({
+          severity: "success",
+          summary: "Success",
+          detail: `Refreshed ${spreadsheets.value.length} spreadsheets`,
+          life: 3000,
+        });
+      } catch (error) {
+        console.error("❌ Failed to refresh spreadsheets:", error);
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: error.message,
+          life: 5000,
+        });
+      } finally {
+        loading.value = false;
+      }
+    };
 
     const loadAuthStatus = async () => {
       try {
-        loading.value = true
-        const response = await fetch('/api/google/auth/status')
-        const data = await response.json()
-        
+        loading.value = true;
+        const response = await fetch("/api/google/auth/status");
+        const data = await response.json();
+
         if (data.success) {
-          authStatus.value = data.data
+          authStatus.value = data.data;
           // Load existing configuration
           if (data.data.settings.wallet_spreadsheet_id) {
-            selectedWalletSpreadsheet.value = data.data.settings.wallet_spreadsheet_id
+            selectedWalletSpreadsheet.value =
+              data.data.settings.wallet_spreadsheet_id;
           }
           if (data.data.settings.shipping_spreadsheet_id) {
-            selectedShippingSpreadsheet.value = data.data.settings.shipping_spreadsheet_id
+            selectedShippingSpreadsheet.value =
+              data.data.settings.shipping_spreadsheet_id;
           }
         }
       } catch (error) {
-        console.error('Failed to load auth status:', error)
+        console.error("Failed to load auth status:", error);
         toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load authentication status',
-          life: 5000
-        })
+          severity: "error",
+          summary: "Error",
+          detail: "Failed to load authentication status",
+          life: 5000,
+        });
       } finally {
-        loading.value = false
+        loading.value = false;
       }
-    }
+    };
 
     const loadSpreadsheets = async () => {
       try {
-        loading.value = true
-        const response = await fetch('/api/google/sheets/list')
-        const data = await response.json()
-        
+        loading.value = true;
+        const response = await fetch("/api/google/sheets/list");
+        const data = await response.json();
+
         if (data.success) {
-          spreadsheets.value = data.data
+          spreadsheets.value = data.data;
           toast.add({
-            severity: 'success',
-            summary: 'Success',
+            severity: "success",
+            summary: "Success",
             detail: `Loaded ${data.data.length} spreadsheets`,
-            life: 3000
-          })
+            life: 3000,
+          });
         }
       } catch (error) {
-        console.error('Failed to load spreadsheets:', error)
+        console.error("Failed to load spreadsheets:", error);
         toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load spreadsheets',
-          life: 5000
-        })
+          severity: "error",
+          summary: "Error",
+          detail: "Failed to load spreadsheets",
+          life: 5000,
+        });
       } finally {
-        loading.value = false
+        loading.value = false;
       }
-    }
+    };
 
     const getSpreadsheetName = (spreadsheetId) => {
-      const spreadsheet = spreadsheets.value.find(s => s.id === spreadsheetId)
-      return spreadsheet ? spreadsheet.name : 'Unknown Spreadsheet'
-    }
+      const spreadsheet = spreadsheets.value.find(
+        (s) => s.id === spreadsheetId
+      );
+      return spreadsheet ? spreadsheet.name : "Unknown Spreadsheet";
+    };
 
     const createNewSpreadsheet = (type) => {
-      createFor.value = type
-      newSpreadsheetName.value = suggestedName.value
-      showCreateDialog.value = true
-    }
+      createFor.value = type;
+      newSpreadsheetName.value = suggestedName.value;
+      showCreateDialog.value = true;
+    };
 
     const confirmCreateSpreadsheet = async () => {
       try {
-        creatingSpreadsheet.value = true
-        const response = await fetch('/api/google/spreadsheets/create', {
-          method: 'POST',
+        creatingSpreadsheet.value = true;
+        const response = await fetch("/api/google/spreadsheets/create", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json'
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            title: newSpreadsheetName.value
-          })
-        })
-        
-        const data = await response.json()
-        
+            title: newSpreadsheetName.value,
+          }),
+        });
+
+        const data = await response.json();
+
         if (data.success) {
           toast.add({
-            severity: 'success',
-            summary: 'Success',
+            severity: "success",
+            summary: "Success",
             detail: data.message,
-            life: 5000
-          })
-          
+            life: 5000,
+          });
+
           // Add to spreadsheets list
-          spreadsheets.value.push(data.data)
-          
+          spreadsheets.value.push(data.data);
+
           // Auto-select the new spreadsheet
-          if (createFor.value === 'wallet') {
-            selectedWalletSpreadsheet.value = data.data.id
+          if (createFor.value === "wallet") {
+            selectedWalletSpreadsheet.value = data.data.id;
           } else {
-            selectedShippingSpreadsheet.value = data.data.id
+            selectedShippingSpreadsheet.value = data.data.id;
           }
-          
-          showCreateDialog.value = false
-          newSpreadsheetName.value = ''
+
+          showCreateDialog.value = false;
+          newSpreadsheetName.value = "";
         } else {
-          throw new Error(data.error || 'Failed to create spreadsheet')
+          throw new Error(data.error || "Failed to create spreadsheet");
         }
       } catch (error) {
-        console.error('Failed to create spreadsheet:', error)
+        console.error("Failed to create spreadsheet:", error);
         toast.add({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: error.message,
-          life: 5000
-        })
+          life: 5000,
+        });
       } finally {
-        creatingSpreadsheet.value = false
+        creatingSpreadsheet.value = false;
       }
-    }
+    };
 
     const saveConfiguration = async () => {
       try {
-        saving.value = true
-        const response = await fetch('/api/google/settings/update-detailed', {
-          method: 'POST',
+        saving.value = true;
+        const response = await fetch("/api/google/settings/update-detailed", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json'
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             wallet_spreadsheet_id: selectedWalletSpreadsheet.value,
-            shipping_spreadsheet_id: selectedShippingSpreadsheet.value
-          })
-        })
-        
-        const data = await response.json()
-        
+            shipping_spreadsheet_id: selectedShippingSpreadsheet.value,
+          }),
+        });
+
+        const data = await response.json();
+
         if (data.success) {
           saveResult.value = {
             success: true,
-            message: data.message
-          }
+            message: data.message,
+          };
           toast.add({
-            severity: 'success',
-            summary: 'Success',
+            severity: "success",
+            summary: "Success",
             detail: data.message,
-            life: 5000
-          })
+            life: 5000,
+          });
         } else {
-          throw new Error(data.error || 'Failed to save configuration')
+          throw new Error(data.error || "Failed to save configuration");
         }
       } catch (error) {
-        console.error('Failed to save configuration:', error)
+        console.error("Failed to save configuration:", error);
         saveResult.value = {
           success: false,
-          message: error.message
-        }
+          message: error.message,
+        };
         toast.add({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: error.message,
-          life: 5000
-        })
+          life: 5000,
+        });
       } finally {
-        saving.value = false
+        saving.value = false;
       }
-    }
+    };
 
     const testConnections = async () => {
       try {
-        testing.value = true
-        
+        testing.value = true;
+
         // Test wallet spreadsheet
         if (selectedWalletSpreadsheet.value) {
-          const walletResponse = await fetch('/api/google/settings/test')
-          const walletData = await walletResponse.json()
-          
+          const walletResponse = await fetch("/api/google/settings/test");
+          const walletData = await walletResponse.json();
+
           if (walletData.success) {
             toast.add({
-              severity: 'success',
-              summary: 'Wallet Spreadsheet',
-              detail: 'Connection test successful',
-              life: 5000
-            })
+              severity: "success",
+              summary: "Wallet Spreadsheet",
+              detail: "Connection test successful",
+              life: 5000,
+            });
           } else {
             toast.add({
-              severity: 'error',
-              summary: 'Wallet Spreadsheet',
-              detail: walletData.error || 'Connection test failed',
-              life: 5000
-            })
+              severity: "error",
+              summary: "Wallet Spreadsheet",
+              detail: walletData.error || "Connection test failed",
+              life: 5000,
+            });
           }
         }
-        
+
         // Test shipping spreadsheet
         if (selectedShippingSpreadsheet.value) {
-          const shippingResponse = await fetch('/api/google/settings/test')
-          const shippingData = await shippingResponse.json()
-          
+          const shippingResponse = await fetch("/api/google/settings/test");
+          const shippingData = await shippingResponse.json();
+
           if (shippingData.success) {
             toast.add({
-              severity: 'success',
-              summary: 'Shipping Spreadsheet',
-              detail: 'Connection test successful',
-              life: 5000
-            })
+              severity: "success",
+              summary: "Shipping Spreadsheet",
+              detail: "Connection test successful",
+              life: 5000,
+            });
           } else {
             toast.add({
-              severity: 'error',
-              summary: 'Shipping Spreadsheet',
-              detail: shippingData.error || 'Connection test failed',
-              life: 5000
-            })
+              severity: "error",
+              summary: "Shipping Spreadsheet",
+              detail: shippingData.error || "Connection test failed",
+              life: 5000,
+            });
           }
         }
-        
-        if (!selectedWalletSpreadsheet.value && !selectedShippingSpreadsheet.value) {
+
+        if (
+          !selectedWalletSpreadsheet.value &&
+          !selectedShippingSpreadsheet.value
+        ) {
           toast.add({
-            severity: 'warn',
-            summary: 'No Spreadsheets',
-            detail: 'Please select at least one spreadsheet to test',
-            life: 5000
-          })
+            severity: "warn",
+            summary: "No Spreadsheets",
+            detail: "Please select at least one spreadsheet to test",
+            life: 5000,
+          });
         }
-        
       } catch (error) {
-        console.error('Failed to test connections:', error)
+        console.error("Failed to test connections:", error);
         toast.add({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: error.message,
-          life: 5000
-        })
+          life: 5000,
+        });
       } finally {
-        testing.value = false
+        testing.value = false;
       }
-    }
+    };
 
     const initiateAuth = async () => {
       try {
-        authLoading.value = true
-        const response = await fetch('/api/google/auth/initiate')
-        const data = await response.json()
-        
+        authLoading.value = true;
+        const response = await fetch("/api/google/auth/initiate");
+        const data = await response.json();
+
         if (data.success && data.auth_url) {
-          const width = 600
-          const height = 700
-          const left = (window.screen.width - width) / 2
-          const top = (window.screen.height - height) / 2
-          
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
+
           const authWindow = window.open(
             data.auth_url,
-            'google_auth',
+            "google_auth",
             `width=${width},height=${height},left=${left},top=${top}`
-          )
-          
+          );
+
           const checkAuth = setInterval(() => {
             if (authWindow.closed) {
-              clearInterval(checkAuth)
-              loadAuthStatus()
+              clearInterval(checkAuth);
+              loadAuthStatus();
             }
-          }, 1000)
+          }, 1000);
         } else {
-          throw new Error(data.error || 'Failed to generate auth URL')
+          throw new Error(data.error || "Failed to generate auth URL");
         }
       } catch (error) {
-        console.error('Failed to initiate auth:', error)
+        console.error("Failed to initiate auth:", error);
         toast.add({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: error.message,
-          life: 5000
-        })
+          life: 5000,
+        });
       } finally {
-        authLoading.value = false
+        authLoading.value = false;
       }
-    }
+    };
 
     const logout = async () => {
       try {
-        loading.value = true
-        const response = await fetch('/api/google/auth/logout')
-        const data = await response.json()
-        
+        loading.value = true;
+        const response = await fetch("/api/google/auth/logout");
+        const data = await response.json();
+
         if (data.success) {
           toast.add({
-            severity: 'success',
-            summary: 'Success',
-            detail: 'Successfully disconnected from Google',
-            life: 3000
-          })
-          await loadAuthStatus()
+            severity: "success",
+            summary: "Success",
+            detail: "Successfully disconnected from Google",
+            life: 3000,
+          });
+          await loadAuthStatus();
           // Reset selections
-          selectedWalletSpreadsheet.value = ''
-          selectedShippingSpreadsheet.value = ''
-          spreadsheets.value = []
+          selectedWalletSpreadsheet.value = "";
+          selectedShippingSpreadsheet.value = "";
+          spreadsheets.value = [];
         } else {
-          throw new Error(data.error || 'Failed to logout')
+          throw new Error(data.error || "Failed to logout");
         }
       } catch (error) {
-        console.error('Failed to logout:', error)
+        console.error("Failed to logout:", error);
         toast.add({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: error.message,
-          life: 5000
-        })
+          life: 5000,
+        });
       } finally {
-        loading.value = false
+        loading.value = false;
       }
-    }
+    };
 
     const refreshAuthStatus = async () => {
-      await loadAuthStatus()
-      await loadSpreadsheets()
+      await loadAuthStatus();
+      await loadSpreadsheets();
       toast.add({
-        severity: 'info',
-        summary: 'Info',
-        detail: 'Authentication status refreshed',
-        life: 3000
-      })
-    }
+        severity: "info",
+        summary: "Info",
+        detail: "Authentication status refreshed",
+        life: 3000,
+      });
+    };
 
     onMounted(() => {
-      loadAuthStatus()
-      loadSpreadsheets()
-      
-      window.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'google_auth_success') {
-          loadAuthStatus()
-          loadSpreadsheets()
+      loadAuthStatus();
+      loadSpreadsheets();
+
+      window.addEventListener("message", (event) => {
+        if (event.data && event.data.type === "google_auth_success") {
+          loadAuthStatus();
+          loadSpreadsheets();
           toast.add({
-            severity: 'success',
-            summary: 'Success',
-            detail: 'Google authentication successful!',
-            life: 5000
-          })
-        } else if (event.data && event.data.type === 'google_auth_error') {
+            severity: "success",
+            summary: "Success",
+            detail: "Google authentication successful!",
+            life: 5000,
+          });
+        } else if (event.data && event.data.type === "google_auth_error") {
           toast.add({
-            severity: 'error',
-            summary: 'Authentication Failed',
-            detail: event.data.error || 'Google authentication failed',
-            life: 5000
-          })
+            severity: "error",
+            summary: "Authentication Failed",
+            detail: event.data.error || "Google authentication failed",
+            life: 5000,
+          });
         }
-      })
-    })
+      });
+    });
 
     // Watch for changes and clear save result
     watch([selectedWalletSpreadsheet, selectedShippingSpreadsheet], () => {
-      saveResult.value = null
-    })
+      saveResult.value = null;
+    });
 
     return {
       authStatus,
@@ -667,6 +764,7 @@ export default {
       showCreateDialog,
       createFor,
       newSpreadsheetName,
+      refreshSpreadsheets,
       suggestedName,
       getSpreadsheetName,
       createNewSpreadsheet,
@@ -675,10 +773,10 @@ export default {
       testConnections,
       initiateAuth,
       logout,
-      refreshAuthStatus
-    }
-  }
-}
+      refreshAuthStatus,
+    };
+  },
+};
 </script>
 
 <style scoped>
@@ -807,12 +905,11 @@ export default {
 
 .spreadsheet-selector {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-items: flex-start;
 }
 
 .dropdown-container {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -887,11 +984,23 @@ export default {
   line-height: 1.3;
 }
 
+.spreadsheet-actions {
+  display: flex;
+  gap: 8px;
+  align-self: flex-start;
+}
+
+.refresh-btn,
 .create-btn {
   padding: 8px 16px !important;
   border-radius: 6px !important;
   white-space: nowrap;
-  margin-top: 24px !important;
+  min-width: 120px;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .form-actions {
@@ -902,9 +1011,11 @@ export default {
   border-top: 1px solid #e9ecef;
 }
 
-.save-btn, .test-btn {
+.save-btn,
+.test-btn {
   padding: 10px 20px !important;
   border-radius: 6px !important;
+  min-width: 160px;
 }
 
 .save-result {
@@ -975,21 +1086,54 @@ export default {
   background: #a8a8a8;
 }
 
-/* Responsive Design */
+/* Hover effects */
+.create-btn:hover,
+.save-btn:hover,
+.test-btn:hover,
+.refresh-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+/* Animation for refresh */
+.refresh-btn .pi-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive design */
 @media (max-width: 768px) {
   .google-sheets-settings {
     padding: 15px;
-    max-height: none;
   }
 
-  .spreadsheet-selector {
+  .spreadsheet-actions {
     flex-direction: column;
-    gap: 10px;
+    width: 100%;
   }
 
+  .refresh-btn,
   .create-btn {
-    margin-top: 0 !important;
-    align-self: flex-start;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .save-btn,
+  .test-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .auth-actions {
@@ -1000,38 +1144,21 @@ export default {
     width: 100%;
     justify-content: center;
   }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .save-btn, .test-btn {
-    width: 100%;
-    justify-content: center;
-  }
 }
 
-/* Animation for better UX */
-.spreadsheet-dropdown :deep(.p-dropdown-panel) {
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
+@media (min-width: 769px) {
+  .spreadsheet-selector {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 15px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-/* Hover effects */
-.create-btn:hover,
-.save-btn:hover,
-.test-btn:hover {
-  transform: translateY(-1px);
-  transition: all 0.2s ease;
+  .dropdown-container {
+    flex: 1;
+  }
+
+  .spreadsheet-actions {
+    flex-shrink: 0;
+  }
 }
 </style>
