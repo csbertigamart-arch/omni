@@ -1,0 +1,26 @@
+{
+  "excluded_files": [
+    "allcode-",
+    "excluded_files.json",
+    "file_manager.py",
+    "eslint.config.mjs",
+    "package-lock.json",
+    "package.json",
+    ".gitignore",
+    "run-improved.bat",
+    "run-backend.bat",
+    "run-frontend.bat",
+  "api_clients.py"  ],
+  
+  "excluded_folders": [
+    "__pycache__",
+    ".git",
+    "node_modules",
+    "config",
+    "lazop",
+    "log",
+    "report",
+    "temp_file"
+  ],
+  "last_updated": "2025-11-21T09:51:34.256269"
+}

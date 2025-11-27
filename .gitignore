@@ -1,0 +1,25 @@
+backend/config/
+frontend/node_modules/
+backend/log/
+backend/temp_file/
+backend/report/
+allcode-*.txt
+node_modules/
+eslint.config.mjs
+package-lock.json
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
