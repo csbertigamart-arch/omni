@@ -10,8 +10,10 @@
     "run-improved.bat",
     "run-backend.bat",
     "run-frontend.bat",
-  "api_clients.py"  ],
-  
+    "platform_handlers.py",
+    "api_clients.py"
+  ],
+
   "excluded_folders": [
     "__pycache__",
     ".git",

@@ -42,6 +42,60 @@ export const useGoogleSheetsStore = defineStore("googleSheets", () => {
     }
   }
 
+  // frontend/src/store/googleSheets.js
+
+  async function refreshSpreadsheets() {
+    try {
+      loading.value = true;
+      console.log("🔄 Refreshing spreadsheets from Google Sheets store...");
+
+      const response = await apiService.get("/google/sheets/refresh");
+
+      if (response.success) {
+        spreadsheets.value = response.data;
+        console.log(`✅ Refreshed ${response.data.length} spreadsheets`);
+
+        // Sort spreadsheets - letakkan yang terakhir digunakan di atas
+        sortSpreadsheetsByLastUsed();
+
+        return response;
+      } else {
+        throw new Error(response.error || "Failed to refresh spreadsheets");
+      }
+    } catch (error) {
+      console.error("❌ Failed to refresh spreadsheets:", error);
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  // Fungsi untuk mengurutkan spreadsheet berdasarkan yang terakhir digunakan
+  function sortSpreadsheetsByLastUsed() {
+    const settings = authStatus.value.settings;
+
+    if (!settings) return;
+
+    // Dapatkan ID spreadsheet yang sedang dipilih
+    const currentWalletId = settings.wallet_spreadsheet_id;
+    const currentShippingId = settings.shipping_spreadsheet_id;
+
+    // Urutkan spreadsheet: yang sedang digunakan di atas, kemudian berdasarkan nama
+    spreadsheets.value.sort((a, b) => {
+      // Prioritaskan yang sedang digunakan untuk wallet
+      if (a.id === currentWalletId) return -1;
+      if (b.id === currentWalletId) return 1;
+
+      // Kemudian yang sedang digunakan untuk shipping
+      if (a.id === currentShippingId) return -1;
+      if (b.id === currentShippingId) return 1;
+
+      // Terakhir urutkan berdasarkan nama
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  // Panggil sorting ketika load spreadsheets
   async function loadSpreadsheets() {
     try {
       loading.value = true;
@@ -49,35 +103,15 @@ export const useGoogleSheetsStore = defineStore("googleSheets", () => {
       if (response.success) {
         spreadsheets.value = response.data;
         console.log(`📊 Loaded ${response.data.length} spreadsheets`);
+
+        // Urutkan setelah loading
+        sortSpreadsheetsByLastUsed();
+
         return response;
       }
       return response;
     } catch (error) {
       console.error("❌ Failed to load spreadsheets:", error);
-      throw error;
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  // PERBAIKAN: Tambahkan method refreshSpreadsheets
-  async function refreshSpreadsheets() {
-    try {
-      loading.value = true;
-      console.log("🔄 Refreshing spreadsheets...");
-
-      // Panggil endpoint refresh yang sudah ada di backend
-      const response = await apiService.get("/google/sheets/refresh");
-
-      if (response.success) {
-        spreadsheets.value = response.data;
-        console.log(`✅ Refreshed ${response.data.length} spreadsheets`);
-        return response;
-      } else {
-        throw new Error(response.error || "Failed to refresh spreadsheets");
-      }
-    } catch (error) {
-      console.error("❌ Failed to refresh spreadsheets:", error);
       throw error;
     } finally {
       loading.value = false;

@@ -362,16 +362,14 @@ export default {
       return `${baseName}_${timestamp}`;
     });
 
-    // PERBAIKAN: Method refreshSpreadsheets yang benar
+    // Dalam setup() di GoogleSheetsSettings.vue
+
     const refreshSpreadsheets = async () => {
       try {
-        loading.value = true;
-        await refreshAuthStatus(); // Refresh auth status first
+        // Gunakan store Google Sheets untuk refresh
+        await googleSheetsStore.refreshSpreadsheets();
 
-        // Gunakan store yang sudah diinisialisasi
-        await googleSheetsStore.loadSpreadsheets();
-
-        // Update local spreadsheets data dari store
+        // Update local spreadsheets data
         spreadsheets.value = googleSheetsStore.spreadsheets;
 
         toast.add({
@@ -388,8 +386,6 @@ export default {
           detail: error.message,
           life: 5000,
         });
-      } finally {
-        loading.value = false;
       }
     };
 

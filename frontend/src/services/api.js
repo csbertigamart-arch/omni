@@ -71,7 +71,17 @@ class ApiService {
       }
     );
   }
-
+  async get(url, config = {}) {
+    try {
+      const response = await this.client.get(url, {
+        ...config,
+        timeout: 15000,
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
   async healthCheck() {
     try {
       const response = await this.client.get("/health", { timeout: 10000 });
@@ -80,8 +90,6 @@ class ApiService {
       throw this.handleError(error);
     }
   }
-
-
 
   async getStatus() {
     try {
@@ -110,7 +118,7 @@ class ApiService {
   async executeSheetsOperation(operation, params = {}) {
     try {
       console.log(`🔄 [API] Executing sheets operation: ${operation}`, params);
-      
+
       const response = await this.client.post(
         "/execute-sheets",
         {
@@ -119,8 +127,11 @@ class ApiService {
         },
         { timeout: 60000 }
       );
-      
-      console.log(`✅ [API] Sheets operation ${operation} response:`, response.data);
+
+      console.log(
+        `✅ [API] Sheets operation ${operation} response:`,
+        response.data
+      );
       return response.data;
     } catch (error) {
       console.error(`❌ [API] Sheets operation ${operation} failed:`, error);

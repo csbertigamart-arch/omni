@@ -1035,7 +1035,6 @@ def debug_wallet_export_test():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
-# Di app.py - tambahkan endpoint refresh
 
 @app.route("/api/google/sheets/refresh")
 def google_sheets_refresh():
@@ -1055,7 +1054,6 @@ def google_sheets_refresh():
     except Exception as e:
         print(f"❌ API Error refreshing spreadsheets: {str(e)}")
         return jsonify({"success": False, "error": str(e)})
-# Start connection monitor in background thread
 connection_monitor = threading.Thread(target=monitor_connections, daemon=True)
 connection_monitor.start()
 

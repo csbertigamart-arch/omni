@@ -83,19 +83,30 @@ export const useAppStore = defineStore("app", () => {
 
   // Di frontend/src/store/googleSheets.js - tambahkan method
 
+  // frontend/src/store/app.js
+
   async function refreshSpreadsheets() {
     try {
       loading.value = true;
       console.log("🔄 Refreshing spreadsheets...");
 
+      // Gunakan apiService.get yang baru
       const response = await apiService.get("/google/sheets/refresh");
+
       if (response.success) {
         spreadsheets.value = response.data;
         console.log(`✅ Refreshed ${response.data.length} spreadsheets`);
 
-        // Show success message
-        if (typeof window.showToast === "function") {
-          window.showToast("success", "Success", response.message);
+        // Show success message menggunakan toast PrimeVue
+        if (typeof toast !== "undefined") {
+          toast.add({
+            severity: "success",
+            summary: "Success",
+            detail:
+              response.message ||
+              `Refreshed ${response.data.length} spreadsheets`,
+            life: 3000,
+          });
         }
 
         return response;
@@ -105,9 +116,14 @@ export const useAppStore = defineStore("app", () => {
     } catch (error) {
       console.error("❌ Failed to refresh spreadsheets:", error);
 
-      // Show error message
-      if (typeof window.showToast === "function") {
-        window.showToast("error", "Error", error.message);
+      // Show error message menggunakan toast PrimeVue
+      if (typeof toast !== "undefined") {
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: error.message,
+          life: 5000,
+        });
       }
 
       throw error;
