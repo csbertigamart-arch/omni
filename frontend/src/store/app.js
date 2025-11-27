@@ -81,32 +81,22 @@ export const useAppStore = defineStore("app", () => {
     }, 30000);
   }
 
-  // Di frontend/src/store/googleSheets.js - tambahkan method
-
-  // frontend/src/store/app.js
-
   async function refreshSpreadsheets() {
     try {
       loading.value = true;
-      console.log("🔄 Refreshing spreadsheets...");
+      console.log("🔄 Refreshing spreadsheets from Google Sheets store...");
 
-      // Gunakan apiService.get yang baru
       const response = await apiService.get("/google/sheets/refresh");
 
       if (response.success) {
         spreadsheets.value = response.data;
         console.log(`✅ Refreshed ${response.data.length} spreadsheets`);
 
-        // Show success message menggunakan toast PrimeVue
-        if (typeof toast !== "undefined") {
-          toast.add({
-            severity: "success",
-            summary: "Success",
-            detail:
-              response.message ||
-              `Refreshed ${response.data.length} spreadsheets`,
-            life: 3000,
-          });
+        // Show success message
+        if (response.data.length === 0) {
+          console.warn(
+            "⚠️ No spreadsheets found - this might be normal if user has no spreadsheets"
+          );
         }
 
         return response;
@@ -116,15 +106,14 @@ export const useAppStore = defineStore("app", () => {
     } catch (error) {
       console.error("❌ Failed to refresh spreadsheets:", error);
 
-      // Show error message menggunakan toast PrimeVue
-      if (typeof toast !== "undefined") {
-        toast.add({
-          severity: "error",
-          summary: "Error",
-          detail: error.message,
-          life: 5000,
-        });
-      }
+      // Show user-friendly error message
+      const toast = useToast();
+      toast.add({
+        severity: "error",
+        summary: "Refresh Failed",
+        detail: error.message || "Failed to refresh spreadsheet list",
+        life: 5000,
+      });
 
       throw error;
     } finally {

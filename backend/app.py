@@ -1038,7 +1038,7 @@ def debug_wallet_export_test():
 
 @app.route("/api/google/sheets/refresh")
 def google_sheets_refresh():
-    """Refresh list of available spreadsheets"""
+    """Refresh list of available spreadsheets - FIXED VERSION"""
     try:
         if not google_sheets_manager.is_authenticated():
             return jsonify({"success": False, "error": "Not authenticated"})
@@ -1046,14 +1046,21 @@ def google_sheets_refresh():
         print("🔄 API: Refreshing spreadsheet list...")
         spreadsheets = google_sheets_manager.refresh_spreadsheets()
         
+        # Debug information
+        print(f"📊 API Response: {len(spreadsheets)} spreadsheets")
+        
         return jsonify({
             "success": True, 
             "data": spreadsheets,
+            "count": len(spreadsheets),
             "message": f"Refreshed {len(spreadsheets)} spreadsheets"
         })
     except Exception as e:
         print(f"❌ API Error refreshing spreadsheets: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)})
+
 connection_monitor = threading.Thread(target=monitor_connections, daemon=True)
 connection_monitor.start()
 

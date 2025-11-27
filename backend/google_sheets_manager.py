@@ -16,8 +16,9 @@ class GoogleSheetsManager:
 
     # Gunakan scope yang lebih spesifik
     SCOPES = [
-        'https://www.googleapis.com/auth/spreadsheets',
-        'https://www.googleapis.com/auth/drive.file'
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive.file',
+    'https://www.googleapis.com/auth/drive.readonly'
     ]
 
     def __init__(self, fs_manager: FileSystemManager):
@@ -239,11 +240,13 @@ class GoogleSheetsManager:
             return False
 
     def _load_available_spreadsheets(self):
-        """Load available spreadsheets after authentication"""
+        """Load available spreadsheets after authentication - FIXED VERSION"""
         try:
             if not self.is_authenticated():
+                print("❌ Not authenticated for loading spreadsheets")
                 return
 
+            print("🔄 Loading spreadsheets from Google Drive...")
             drive_service = build('drive', 'v3', credentials=self.creds)
             results = drive_service.files().list(
                 q="mimeType='application/vnd.google-apps.spreadsheet'",
@@ -252,8 +255,9 @@ class GoogleSheetsManager:
             ).execute()
 
             spreadsheets = results.get('files', [])
+            print(f"📊 Found {len(spreadsheets)} spreadsheets from Google Drive")
 
-            # Simpan ke settings
+            # Update settings
             self.settings["available_spreadsheets"] = [
                 {
                     'id': sheet['id'],
@@ -265,11 +269,13 @@ class GoogleSheetsManager:
             ]
 
             self._save_settings()
-            print(f"📊 Loaded {len(spreadsheets)} spreadsheets")
+            print(f"✅ Loaded {len(spreadsheets)} spreadsheets into settings")
 
         except Exception as e:
             print(f"❌ Error loading spreadsheets: {str(e)}")
-
+            import traceback
+            traceback.print_exc()
+            # Don't clear existing data on error
     def get_spreadsheets(self) -> List[Dict]:
         """Get list of available spreadsheets"""
         if not self.is_authenticated():
@@ -575,7 +581,7 @@ class GoogleSheetsManager:
 
 
     def refresh_spreadsheets(self) -> List[Dict]:
-        """Refresh and reload the list of available spreadsheets"""
+        """Refresh and reload the list of available spreadsheets - FIXED VERSION"""
         try:
             if not self.is_authenticated():
                 print("❌ Not authenticated for refreshing spreadsheets")
@@ -583,18 +589,48 @@ class GoogleSheetsManager:
 
             print("🔄 Refreshing spreadsheet list from Google Drive...")
             
-            # Clear cached data
-            self.settings["available_spreadsheets"] = []
-            self._save_settings()
-            
-            # Reload from Google Drive
-            self._load_available_spreadsheets()
-            
-            refreshed_count = len(self.settings.get("available_spreadsheets", []))
-            print(f"✅ Refreshed {refreshed_count} spreadsheets")
-            
-            return self.settings.get("available_spreadsheets", [])
-            
+            # Jangan clear data dulu, load dulu kemudian update
+            try:
+                # Reload from Google Drive
+                drive_service = build('drive', 'v3', credentials=self.creds)
+                results = drive_service.files().list(
+                    q="mimeType='application/vnd.google-apps.spreadsheet'",
+                    pageSize=100,
+                    fields="files(id, name, createdTime, modifiedTime)"
+                ).execute()
+
+                spreadsheets = results.get('files', [])
+                print(f"📊 Found {len(spreadsheets)} spreadsheets from Google Drive")
+
+                # Update settings dengan data baru
+                self.settings["available_spreadsheets"] = [
+                    {
+                        'id': sheet['id'],
+                        'name': sheet['name'],
+                        'created_time': sheet.get('createdTime', ''),
+                        'modified_time': sheet.get('modifiedTime', '')
+                    }
+                    for sheet in spreadsheets
+                ]
+
+                self._save_settings()
+                
+                refreshed_count = len(spreadsheets)
+                print(f"✅ Successfully refreshed {refreshed_count} spreadsheets")
+                
+                return self.settings["available_spreadsheets"]
+                
+            except Exception as load_error:
+                print(f"❌ Error loading spreadsheets from Google Drive: {str(load_error)}")
+                # Return existing data if available, rather than empty array
+                existing_data = self.settings.get("available_spreadsheets", [])
+                print(f"🔄 Returning existing data: {len(existing_data)} spreadsheets")
+                return existing_data
+
         except Exception as e:
-            print(f"❌ Error refreshing spreadsheets: {str(e)}")
-            return []
+            print(f"❌ Error in refresh_spreadsheets: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # Return existing data instead of empty array
+            existing_data = self.settings.get("available_spreadsheets", [])
+            return existing_data
