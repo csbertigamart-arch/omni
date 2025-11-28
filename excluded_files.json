@@ -11,7 +11,9 @@
     "run-backend.bat",
     "run-frontend.bat",
     "product_managers.py",
-    "api_clients.py"
+    "api_clients.py",
+    "ecommerce_app.py",
+    "DashboardMainContent.vue"
   ],
 
   "excluded_folders": [

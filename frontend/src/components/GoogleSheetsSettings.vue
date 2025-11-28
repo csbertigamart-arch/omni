@@ -20,34 +20,22 @@
             :class="authStatus.authenticated ? 'connected' : 'disconnected'"
           >
             <i
-              :class="
-                authStatus.authenticated
-                  ? 'pi pi-check-circle'
-                  : 'pi pi-exclamation-circle'
-              "
+              :class="authStatus.authenticated ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"
             ></i>
-            <span>{{
-              authStatus.authenticated ? "Connected to Google" : "Not Connected"
-            }}</span>
+            <span>{{ authStatus.authenticated ? 'Connected to Google' : 'Not Connected' }}</span>
           </div>
 
           <div v-if="!authStatus.has_credentials" class="credentials-warning">
             <i class="pi pi-exclamation-triangle"></i>
             <div>
               <p><strong>Google OAuth credentials not configured</strong></p>
-              <p>
-                Please download credentials from Google Cloud Console and save
-                as:
-              </p>
+              <p>Please download credentials from Google Cloud Console and save as:</p>
               <code>backend/config/google_credentials.json</code>
               <p class="help-text">
                 Steps:
                 <br />1. Go to
-                <a href="https://console.cloud.google.com" target="_blank"
-                  >Google Cloud Console</a
-                >
-                <br />2. Create credentials (OAuth 2.0 Client IDs) <br />3. Set
-                redirect URI to:
+                <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a>
+                <br />2. Create credentials (OAuth 2.0 Client IDs) <br />3. Set redirect URI to:
                 <code>http://localhost:5000/api/google/auth/callback</code>
                 <br />4. Download JSON and save as above
               </p>
@@ -134,8 +122,7 @@
                   </template>
                 </Dropdown>
                 <small class="helper-text">
-                  Spreadsheet untuk menyimpan laporan wallet transactions dari
-                  Shopee
+                  Spreadsheet untuk menyimpan laporan wallet transactions dari Shopee
                 </small>
               </div>
 
@@ -198,8 +185,7 @@
                   </template>
                 </Dropdown>
                 <small class="helper-text">
-                  Spreadsheet untuk menyimpan laporan perhitungan shipping fee
-                  dari Shopee
+                  Spreadsheet untuk menyimpan laporan perhitungan shipping fee dari Shopee
                 </small>
               </div>
 
@@ -223,68 +209,77 @@
             </div>
           </div>
 
-
-
-          <!-- Di template, bagian Order Spreadsheet -->
+          <!-- Di template, perbaiki bagian Order Spreadsheet -->
           <div class="form-group">
-              <label class="form-label">
-                  <i class="pi pi-shopping-cart"></i>
-                  Order Export Spreadsheet
-              </label>
-              <div class="spreadsheet-selector">
-                  <div class="dropdown-container">
-                      <Dropdown
-                          v-model="selectedOrderSpreadsheet"
-                          :options="spreadsheets"
-                          optionLabel="name"
-                          optionValue="id"
-                          placeholder="Select spreadsheet for order exports"
-                          class="w-full spreadsheet-dropdown"
-                          :filter="false"
-                          :showClear="true"
-                          :disabled="spreadsheets.length === 0"
-                      >
-                          <template #value="slotProps">
-                              <div v-if="slotProps.value" class="selected-spreadsheet">
-                                  <i class="pi pi-file-excel"></i>
-                                  <span>{{ getSpreadsheetName(slotProps.value) }}</span>
-                              </div>
-                              <span v-else>{{ slotProps.placeholder }}</span>
-                          </template>
-                          <template #option="slotProps">
-                              <div class="spreadsheet-option">
-                                  <i class="pi pi-file-excel"></i>
-                                  <div class="option-details">
-                                      <div class="option-name">{{ slotProps.option.name }}</div>
-                                      <div class="option-id">{{ slotProps.option.id }}</div>
-                                  </div>
-                              </div>
-                          </template>
-                      </Dropdown>
-                      <small class="helper-text">
-                          Spreadsheet untuk menyimpan ekspor order dari semua platform (Shopee, Lazada, Tiktok)
-                          <br><strong>Rekomendasi:</strong> Gunakan spreadsheet yang sama dengan Wallet untuk konsistensi
-                      </small>
-                  </div>
-
-                  <div class="spreadsheet-actions">
-                      <Button
-                          icon="pi pi-refresh"
-                          label="Refresh List"
-                          @click="refreshSpreadsheets"
-                          :loading="loading"
-                          class="p-button-outlined p-button-sm refresh-btn"
-                          :disabled="loading"
-                      />
-                      <Button
-                          icon="pi pi-copy"
-                          label="Use Same as Wallet"
-                          @click="selectedOrderSpreadsheet = selectedWalletSpreadsheet"
-                          :disabled="!selectedWalletSpreadsheet"
-                          class="p-button-outlined p-button-sm copy-btn"
-                      />
-                  </div>
+            <label class="form-label">
+              <i class="pi pi-shopping-cart"></i>
+              Order Export Spreadsheet
+              <span class="optional-badge">(Optional)</span>
+            </label>
+            <div class="spreadsheet-selector">
+              <div class="dropdown-container">
+                <Dropdown
+                  v-model="selectedOrderSpreadsheet"
+                  :options="spreadsheets"
+                  optionLabel="name"
+                  optionValue="id"
+                  placeholder="Select spreadsheet for order exports"
+                  class="w-full spreadsheet-dropdown"
+                  :filter="false"
+                  :showClear="true"
+                  :disabled="spreadsheets.length === 0"
+                >
+                  <template #value="slotProps">
+                    <div v-if="slotProps.value" class="selected-spreadsheet">
+                      <i class="pi pi-file-excel"></i>
+                      <span>{{ getSpreadsheetName(slotProps.value) }}</span>
+                      <span v-if="slotProps.value === selectedWalletSpreadsheet" class="same-as-wallet-badge">
+                        (Same as Wallet)
+                      </span>
+                    </div>
+                    <span v-else>{{ slotProps.placeholder }}</span>
+                  </template>
+                  <template #option="slotProps">
+                    <div class="spreadsheet-option">
+                      <i class="pi pi-file-excel"></i>
+                      <div class="option-details">
+                        <div class="option-name">{{ slotProps.option.name }}</div>
+                        <div class="option-id">{{ slotProps.option.id }}</div>
+                      </div>
+                    </div>
+                  </template>
+                </Dropdown>
+                <small class="helper-text">
+                  Spreadsheet untuk menyimpan ekspor order dari semua platform
+                  <br /><strong>Kosongkan</strong> jika tidak ingin mengekspor order
+                </small>
               </div>
+
+              <div class="spreadsheet-actions">
+                <Button
+                  icon="pi pi-refresh"
+                  label="Refresh List"
+                  @click="refreshSpreadsheets"
+                  :loading="loading"
+                  class="p-button-outlined p-button-sm refresh-btn"
+                  :disabled="loading"
+                />
+                <Button
+                  icon="pi pi-copy"
+                  label="Use Wallet"
+                  @click="selectedOrderSpreadsheet = selectedWalletSpreadsheet"
+                  :disabled="!selectedWalletSpreadsheet"
+                  class="p-button-outlined p-button-sm copy-btn"
+                />
+                <Button
+                  icon="pi pi-times"
+                  label="Clear"
+                  @click="selectedOrderSpreadsheet = ''"
+                  :disabled="!selectedOrderSpreadsheet"
+                  class="p-button-outlined p-button-sm clear-btn"
+                />
+              </div>
+            </div>
           </div>
           <div class="form-actions">
             <Button
@@ -308,13 +303,7 @@
             class="save-result"
             :class="saveResult.success ? 'success' : 'error'"
           >
-            <i
-              :class="
-                saveResult.success
-                  ? 'pi pi-check-circle'
-                  : 'pi pi-exclamation-circle'
-              "
-            ></i>
+            <i :class="saveResult.success ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'"></i>
             <span>{{ saveResult.message }}</span>
           </div>
         </div>
@@ -333,9 +322,7 @@
           <i class="pi pi-info-circle"></i>
           <p>
             Create a new Google Spreadsheet for
-            {{
-              createFor === "wallet" ? "Wallet Reports" : "Shipping Fee Reports"
-            }}
+            {{ createFor === 'wallet' ? 'Wallet Reports' : 'Shipping Fee Reports' }}
           </p>
         </div>
 
@@ -372,18 +359,18 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from "vue";
-import { useToast } from "primevue/usetoast";
-import { useGoogleSheetsStore } from "../store/googleSheets";
-import Card from "primevue/card";
-import Button from "primevue/button";
-import Dropdown from "primevue/dropdown";
-import InputText from "primevue/inputtext";
-import Dialog from "primevue/dialog";
-import ProgressSpinner from "primevue/progressspinner";
+import { ref, computed, onMounted, watch } from 'vue';
+import { useToast } from 'primevue/usetoast';
+import { useGoogleSheetsStore } from '../store/googleSheets';
+import Card from 'primevue/card';
+import Button from 'primevue/button';
+import Dropdown from 'primevue/dropdown';
+import InputText from 'primevue/inputtext';
+import Dialog from 'primevue/dialog';
+import ProgressSpinner from 'primevue/progressspinner';
 
 export default {
-  name: "GoogleSheetsSettings",
+  name: 'GoogleSheetsSettings',
   components: {
     Card,
     Button,
@@ -395,7 +382,7 @@ export default {
   setup() {
     const toast = useToast();
     const googleSheetsStore = useGoogleSheetsStore();
-    const selectedOrderSpreadsheet = ref("");
+    const selectedOrderSpreadsheet = ref('');
     const authStatus = ref({
       authenticated: false,
       settings: {},
@@ -408,20 +395,17 @@ export default {
     const testing = ref(false);
     const creatingSpreadsheet = ref(false);
 
-    const selectedWalletSpreadsheet = ref("");
-    const selectedShippingSpreadsheet = ref("");
+    const selectedWalletSpreadsheet = ref('');
+    const selectedShippingSpreadsheet = ref('');
     const saveResult = ref(null);
 
     const showCreateDialog = ref(false);
-    const createFor = ref("wallet");
-    const newSpreadsheetName = ref("");
+    const createFor = ref('wallet');
+    const newSpreadsheetName = ref('');
 
     const suggestedName = computed(() => {
-      const baseName =
-        createFor.value === "wallet"
-          ? "Wallet_Reports"
-          : "Shipping_Fee_Reports";
-      const timestamp = new Date().toISOString().split("T")[0];
+      const baseName = createFor.value === 'wallet' ? 'Wallet_Reports' : 'Shipping_Fee_Reports';
+      const timestamp = new Date().toISOString().split('T')[0];
       return `${baseName}_${timestamp}`;
     });
 
@@ -436,16 +420,16 @@ export default {
         spreadsheets.value = googleSheetsStore.spreadsheets;
 
         toast.add({
-          severity: "success",
-          summary: "Success",
+          severity: 'success',
+          summary: 'Success',
           detail: `Refreshed ${spreadsheets.value.length} spreadsheets`,
           life: 3000,
         });
       } catch (error) {
-        console.error("❌ Failed to refresh spreadsheets:", error);
+        console.error('❌ Failed to refresh spreadsheets:', error);
         toast.add({
-          severity: "error",
-          summary: "Error",
+          severity: 'error',
+          summary: 'Error',
           detail: error.message,
           life: 5000,
         });
@@ -453,60 +437,58 @@ export default {
     };
 
     const loadAuthStatus = async () => {
-        try {
-            loading.value = true;
-            const response = await fetch("/api/google/auth/status");
-            const data = await response.json();
-            
-            if (data.success) {
-                authStatus.value = data.data;
-                // Load existing configuration untuk semua spreadsheet
-                if (data.data.settings.wallet_spreadsheet_id) {
-                    selectedWalletSpreadsheet.value = data.data.settings.wallet_spreadsheet_id;
-                }
-                if (data.data.settings.shipping_spreadsheet_id) {
-                    selectedShippingSpreadsheet.value = data.data.settings.shipping_spreadsheet_id;
-                }
-                if (data.data.settings.order_spreadsheet_id) {
-                    selectedOrderSpreadsheet.value = data.data.settings.order_spreadsheet_id;
-                } else {
-                    // Jika order_spreadsheet_id belum ada, gunakan wallet sebagai fallback
-                    selectedOrderSpreadsheet.value = data.data.settings.wallet_spreadsheet_id;
-                }
-            }
-        } catch (error) {
-            console.error("Failed to load auth status:", error);
-            toast.add({
-                severity: "error",
-                summary: "Error",
-                detail: "Failed to load authentication status",
-                life: 5000,
-            });
-        } finally {
-            loading.value = false;
+      try {
+        loading.value = true;
+        const response = await fetch('/api/google/auth/status');
+        const data = await response.json();
+
+        if (data.success) {
+          authStatus.value = data.data;
+          // Load existing configuration untuk semua spreadsheet
+          if (data.data.settings.wallet_spreadsheet_id) {
+            selectedWalletSpreadsheet.value = data.data.settings.wallet_spreadsheet_id;
+          }
+          if (data.data.settings.shipping_spreadsheet_id) {
+            selectedShippingSpreadsheet.value = data.data.settings.shipping_spreadsheet_id;
+          }
+          if (data.data.settings.order_spreadsheet_id) {
+            selectedOrderSpreadsheet.value = data.data.settings.order_spreadsheet_id;
+
+          }
         }
+      } catch (error) {
+        console.error('Failed to load auth status:', error);
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load authentication status',
+          life: 5000,
+        });
+      } finally {
+        loading.value = false;
+      }
     };
     const loadSpreadsheets = async () => {
       try {
         loading.value = true;
-        const response = await fetch("/api/google/sheets/list");
+        const response = await fetch('/api/google/sheets/list');
         const data = await response.json();
 
         if (data.success) {
           spreadsheets.value = data.data;
           toast.add({
-            severity: "success",
-            summary: "Success",
+            severity: 'success',
+            summary: 'Success',
             detail: `Loaded ${data.data.length} spreadsheets`,
             life: 3000,
           });
         }
       } catch (error) {
-        console.error("Failed to load spreadsheets:", error);
+        console.error('Failed to load spreadsheets:', error);
         toast.add({
-          severity: "error",
-          summary: "Error",
-          detail: "Failed to load spreadsheets",
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load spreadsheets',
           life: 5000,
         });
       } finally {
@@ -515,10 +497,8 @@ export default {
     };
 
     const getSpreadsheetName = (spreadsheetId) => {
-      const spreadsheet = spreadsheets.value.find(
-        (s) => s.id === spreadsheetId
-      );
-      return spreadsheet ? spreadsheet.name : "Unknown Spreadsheet";
+      const spreadsheet = spreadsheets.value.find((s) => s.id === spreadsheetId);
+      return spreadsheet ? spreadsheet.name : 'Unknown Spreadsheet';
     };
 
     const createNewSpreadsheet = (type) => {
@@ -530,10 +510,10 @@ export default {
     const confirmCreateSpreadsheet = async () => {
       try {
         creatingSpreadsheet.value = true;
-        const response = await fetch("/api/google/spreadsheets/create", {
-          method: "POST",
+        const response = await fetch('/api/google/spreadsheets/create', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             title: newSpreadsheetName.value,
@@ -544,8 +524,8 @@ export default {
 
         if (data.success) {
           toast.add({
-            severity: "success",
-            summary: "Success",
+            severity: 'success',
+            summary: 'Success',
             detail: data.message,
             life: 5000,
           });
@@ -554,22 +534,22 @@ export default {
           spreadsheets.value.push(data.data);
 
           // Auto-select the new spreadsheet
-          if (createFor.value === "wallet") {
+          if (createFor.value === 'wallet') {
             selectedWalletSpreadsheet.value = data.data.id;
           } else {
             selectedShippingSpreadsheet.value = data.data.id;
           }
 
           showCreateDialog.value = false;
-          newSpreadsheetName.value = "";
+          newSpreadsheetName.value = '';
         } else {
-          throw new Error(data.error || "Failed to create spreadsheet");
+          throw new Error(data.error || 'Failed to create spreadsheet');
         }
       } catch (error) {
-        console.error("Failed to create spreadsheet:", error);
+        console.error('Failed to create spreadsheet:', error);
         toast.add({
-          severity: "error",
-          summary: "Error",
+          severity: 'error',
+          summary: 'Error',
           detail: error.message,
           life: 5000,
         });
@@ -578,62 +558,65 @@ export default {
       }
     };
 
-
     const saveConfiguration = async () => {
-        try {
-            saving.value = true;
-            
-            // Validasi: pastikan setidaknya satu spreadsheet dipilih
-            if (!selectedWalletSpreadsheet.value && !selectedShippingSpreadsheet.value && !selectedOrderSpreadsheet.value) {
-                throw new Error("Please select at least one spreadsheet");
-            }
+      try {
+        saving.value = true;
 
-            const response = await fetch("/api/google/settings/update-detailed", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    wallet_spreadsheet_id: selectedWalletSpreadsheet.value,
-                    shipping_spreadsheet_id: selectedShippingSpreadsheet.value,
-                    order_spreadsheet_id: selectedOrderSpreadsheet.value
-                }),
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                saveResult.value = {
-                    success: true,
-                    message: data.message,
-                };
-                toast.add({
-                    severity: "success",
-                    summary: "Success",
-                    detail: data.message,
-                    life: 5000,
-                });
-                
-                // Refresh status untuk mendapatkan settings terbaru
-                await loadAuthStatus();
-            } else {
-                throw new Error(data.error || "Failed to save configuration");
-            }
-        } catch (error) {
-            console.error("Failed to save configuration:", error);
-            saveResult.value = {
-                success: false,
-                message: error.message,
-            };
-            toast.add({
-                severity: "error",
-                summary: "Error",
-                detail: error.message,
-                life: 5000,
-            });
-        } finally {
-            saving.value = false;
+        // Validasi: pastikan setidaknya satu spreadsheet dipilih
+        if (
+          !selectedWalletSpreadsheet.value &&
+          !selectedShippingSpreadsheet.value &&
+          !selectedOrderSpreadsheet.value
+        ) {
+          throw new Error('Please select at least one spreadsheet');
         }
+
+        const response = await fetch('/api/google/settings/update-detailed', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            wallet_spreadsheet_id: selectedWalletSpreadsheet.value,
+            shipping_spreadsheet_id: selectedShippingSpreadsheet.value,
+            order_spreadsheet_id: selectedOrderSpreadsheet.value,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          saveResult.value = {
+            success: true,
+            message: data.message,
+          };
+          toast.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: data.message,
+            life: 5000,
+          });
+
+          // Refresh status untuk mendapatkan settings terbaru
+          await loadAuthStatus();
+        } else {
+          throw new Error(data.error || 'Failed to save configuration');
+        }
+      } catch (error) {
+        console.error('Failed to save configuration:', error);
+        saveResult.value = {
+          success: false,
+          message: error.message,
+        };
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.message,
+          life: 5000,
+        });
+      } finally {
+        saving.value = false;
+      }
     };
 
     const testConnections = async () => {
@@ -642,21 +625,21 @@ export default {
 
         // Test wallet spreadsheet
         if (selectedWalletSpreadsheet.value) {
-          const walletResponse = await fetch("/api/google/settings/test");
+          const walletResponse = await fetch('/api/google/settings/test');
           const walletData = await walletResponse.json();
 
           if (walletData.success) {
             toast.add({
-              severity: "success",
-              summary: "Wallet Spreadsheet",
-              detail: "Connection test successful",
+              severity: 'success',
+              summary: 'Wallet Spreadsheet',
+              detail: 'Connection test successful',
               life: 5000,
             });
           } else {
             toast.add({
-              severity: "error",
-              summary: "Wallet Spreadsheet",
-              detail: walletData.error || "Connection test failed",
+              severity: 'error',
+              summary: 'Wallet Spreadsheet',
+              detail: walletData.error || 'Connection test failed',
               life: 5000,
             });
           }
@@ -664,42 +647,39 @@ export default {
 
         // Test shipping spreadsheet
         if (selectedShippingSpreadsheet.value) {
-          const shippingResponse = await fetch("/api/google/settings/test");
+          const shippingResponse = await fetch('/api/google/settings/test');
           const shippingData = await shippingResponse.json();
 
           if (shippingData.success) {
             toast.add({
-              severity: "success",
-              summary: "Shipping Spreadsheet",
-              detail: "Connection test successful",
+              severity: 'success',
+              summary: 'Shipping Spreadsheet',
+              detail: 'Connection test successful',
               life: 5000,
             });
           } else {
             toast.add({
-              severity: "error",
-              summary: "Shipping Spreadsheet",
-              detail: shippingData.error || "Connection test failed",
+              severity: 'error',
+              summary: 'Shipping Spreadsheet',
+              detail: shippingData.error || 'Connection test failed',
               life: 5000,
             });
           }
         }
 
-        if (
-          !selectedWalletSpreadsheet.value &&
-          !selectedShippingSpreadsheet.value
-        ) {
+        if (!selectedWalletSpreadsheet.value && !selectedShippingSpreadsheet.value) {
           toast.add({
-            severity: "warn",
-            summary: "No Spreadsheets",
-            detail: "Please select at least one spreadsheet to test",
+            severity: 'warn',
+            summary: 'No Spreadsheets',
+            detail: 'Please select at least one spreadsheet to test',
             life: 5000,
           });
         }
       } catch (error) {
-        console.error("Failed to test connections:", error);
+        console.error('Failed to test connections:', error);
         toast.add({
-          severity: "error",
-          summary: "Error",
+          severity: 'error',
+          summary: 'Error',
           detail: error.message,
           life: 5000,
         });
@@ -711,7 +691,7 @@ export default {
     const initiateAuth = async () => {
       try {
         authLoading.value = true;
-        const response = await fetch("/api/google/auth/initiate");
+        const response = await fetch('/api/google/auth/initiate');
         const data = await response.json();
 
         if (data.success && data.auth_url) {
@@ -722,7 +702,7 @@ export default {
 
           const authWindow = window.open(
             data.auth_url,
-            "google_auth",
+            'google_auth',
             `width=${width},height=${height},left=${left},top=${top}`
           );
 
@@ -733,13 +713,13 @@ export default {
             }
           }, 1000);
         } else {
-          throw new Error(data.error || "Failed to generate auth URL");
+          throw new Error(data.error || 'Failed to generate auth URL');
         }
       } catch (error) {
-        console.error("Failed to initiate auth:", error);
+        console.error('Failed to initiate auth:', error);
         toast.add({
-          severity: "error",
-          summary: "Error",
+          severity: 'error',
+          summary: 'Error',
           detail: error.message,
           life: 5000,
         });
@@ -751,29 +731,29 @@ export default {
     const logout = async () => {
       try {
         loading.value = true;
-        const response = await fetch("/api/google/auth/logout");
+        const response = await fetch('/api/google/auth/logout');
         const data = await response.json();
 
         if (data.success) {
           toast.add({
-            severity: "success",
-            summary: "Success",
-            detail: "Successfully disconnected from Google",
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Successfully disconnected from Google',
             life: 3000,
           });
           await loadAuthStatus();
           // Reset selections
-          selectedWalletSpreadsheet.value = "";
-          selectedShippingSpreadsheet.value = "";
+          selectedWalletSpreadsheet.value = '';
+          selectedShippingSpreadsheet.value = '';
           spreadsheets.value = [];
         } else {
-          throw new Error(data.error || "Failed to logout");
+          throw new Error(data.error || 'Failed to logout');
         }
       } catch (error) {
-        console.error("Failed to logout:", error);
+        console.error('Failed to logout:', error);
         toast.add({
-          severity: "error",
-          summary: "Error",
+          severity: 'error',
+          summary: 'Error',
           detail: error.message,
           life: 5000,
         });
@@ -786,9 +766,9 @@ export default {
       await loadAuthStatus();
       await loadSpreadsheets();
       toast.add({
-        severity: "info",
-        summary: "Info",
-        detail: "Authentication status refreshed",
+        severity: 'info',
+        summary: 'Info',
+        detail: 'Authentication status refreshed',
         life: 3000,
       });
     };
@@ -797,28 +777,33 @@ export default {
       loadAuthStatus();
       loadSpreadsheets();
 
-      window.addEventListener("message", (event) => {
-        if (event.data && event.data.type === "google_auth_success") {
+      window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'google_auth_success') {
           loadAuthStatus();
           loadSpreadsheets();
           toast.add({
-            severity: "success",
-            summary: "Success",
-            detail: "Google authentication successful!",
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Google authentication successful!',
             life: 5000,
           });
-        } else if (event.data && event.data.type === "google_auth_error") {
+        } else if (event.data && event.data.type === 'google_auth_error') {
           toast.add({
-            severity: "error",
-            summary: "Authentication Failed",
-            detail: event.data.error || "Google authentication failed",
+            severity: 'error',
+            summary: 'Authentication Failed',
+            detail: event.data.error || 'Google authentication failed',
             life: 5000,
           });
         }
       });
     });
 
-    // Watch for changes and clear save result
+    watch(selectedOrderSpreadsheet, (newValue) => {
+      console.log('Order spreadsheet changed to:', newValue);
+      saveResult.value = null;
+    });
+
+    // Juga perbaiki watch yang existing
     watch([selectedWalletSpreadsheet, selectedShippingSpreadsheet], () => {
       saveResult.value = null;
     });
@@ -1233,5 +1218,34 @@ export default {
   .spreadsheet-actions {
     flex-shrink: 0;
   }
+}
+
+
+.optional-badge {
+  background: #6c757d;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  margin-left: 8px;
+}
+
+.same-as-wallet-badge {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  margin-left: 8px;
+}
+
+.clear-btn {
+  color: #dc3545 !important;
+  border-color: #dc3545 !important;
+}
+
+.clear-btn:hover {
+  background: #dc3545 !important;
+  color: white !important;
 }
 </style>
