@@ -390,7 +390,7 @@ export default {
     const showCreateDialog = ref(false);
     const createFor = ref('wallet');
     const newSpreadsheetName = ref('');
-    const selectedOrderSpreadsheet = ref(authStatus.value.settings?.order_spreadsheet_id || '');
+    const selectedOrderSpreadsheet = ref(''); 
 
     const suggestedName = computed(() => {
       const baseName = createFor.value === 'wallet' ? 'Wallet_Reports' : 'Shipping_Fee_Reports';
@@ -836,6 +836,7 @@ export default {
       refreshSpreadsheets,
       suggestedName,
       getSpreadsheetName,
+      selectedOrderSpreadsheet,
       createNewSpreadsheet,
       confirmCreateSpreadsheet,
       saveConfiguration,
