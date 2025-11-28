@@ -47,6 +47,7 @@ class Container:
             order_manager=self.lazada.order_mgr,
             sheet_manager=self.gsheet,
             fs_manager=self.fs,
+            google_sheets_manager=self.google_sheets_manager
         )
 
     def create_tiktok_handler(self) -> TiktokPlatformHandler:
@@ -57,6 +58,7 @@ class Container:
             order_manager=self.tiktok.order_mgr,
             sheet_manager=self.gsheet,
             fs_manager=self.fs,
+            google_sheets_manager=self.google_sheets_manager
         )
 
     def create_app(self):

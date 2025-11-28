@@ -1806,6 +1806,130 @@ class ShopeePlatformHandler(IPlatformHandler):
             )
             return False
 
+    def export_orders_to_google_sheets(self, order_type, days=7):
+        """Export orders directly to Google Sheets dengan validasi lengkap"""
+        try:
+            self.logger.info(
+                f"🔄 Exporting {order_type} orders to Google Sheets for {days} days")
+
+            # Validasi Google Sheets Manager
+            if not hasattr(self, 'google_sheets_manager') or not self.google_sheets_manager:
+                self.logger.error("❌ Google Sheets Manager not available")
+                return False
+
+            if not self.google_sheets_manager.is_authenticated():
+                self.logger.error("❌ Google Sheets not authenticated")
+                return False
+
+            # Get spreadsheet ID from settings
+            spreadsheet_id = self.google_sheets_manager.settings.get(
+                "order_spreadsheet_id")
+
+            # Fallback ke wallet spreadsheet jika order spreadsheet tidak diatur
+            if not spreadsheet_id:
+                spreadsheet_id = self.google_sheets_manager.settings.get(
+                    "wallet_spreadsheet_id")
+                self.logger.warning(
+                    "⚠️ Order spreadsheet not configured, using wallet spreadsheet as fallback")
+
+            if not spreadsheet_id:
+                self.logger.error(
+                    "❌ No spreadsheet ID configured for order exports")
+                return False
+
+            self.logger.info(f"📊 Using spreadsheet: {spreadsheet_id}")
+
+            # Get orders based on type
+            if order_type == "ALL":
+                # Combine all order types
+                all_orders = []
+                statuses = self._get_order_statuses_for_platform()
+
+                for status in statuses:
+                    orders = self.order_manager.get_order_list(status, days)
+                    all_orders.extend(orders)
+
+                if not all_orders:
+                    self.logger.warning("⚠️ No orders found for export")
+                    return False
+
+                # Get order details
+                order_sn_list = self._extract_order_ids(all_orders)
+                order_details = self.order_manager.get_order_details(
+                    order_sn_list)
+
+                # Format data for export
+                formatted_data = self.order_manager.format_items_for_export(
+                    order_details)
+
+            else:
+                # Get specific order type
+                orders = self.order_manager.get_order_list(order_type, days)
+                if not orders:
+                    self.logger.warning(f"⚠️ No {order_type} orders found")
+                    return False
+
+                order_sn_list = self._extract_order_ids(orders)
+                order_details = self.order_manager.get_order_details(
+                    order_sn_list)
+                formatted_data = self.order_manager.format_items_for_export(
+                    order_details)
+
+            if not formatted_data:
+                self.logger.warning("⚠️ No formatted data to export")
+                return False
+
+            # Prepare headers
+            headers = ["Order SN", "SKU", "Product Name",
+                       "Variation", "Quantity", "Price", "Status"]
+            data_for_sheets = [headers] + formatted_data
+
+            # Create sheet name
+            sheet_name = f"{self.platform_name} {order_type} Orders"
+
+            # Upload to Google Sheets
+            success = self.google_sheets_manager.upload_to_sheet(
+                spreadsheet_id=spreadsheet_id,
+                sheet_name=sheet_name,
+                data=data_for_sheets
+            )
+
+            if success:
+                self.logger.info(
+                    f"✅ Successfully exported {len(formatted_data)} {order_type} orders to Google Sheets")
+                return True
+            else:
+                self.logger.error("❌ Failed to upload data to Google Sheets")
+                return False
+
+        except Exception as e:
+            self.logger.error(
+                f"❌ Error exporting orders to Google Sheets: {str(e)}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            return False
+
+    def _get_order_statuses_for_platform(self):
+        """Get order statuses berdasarkan platform"""
+        if self.platform_name.lower() == "shopee":
+            return ["UNPAID", "READY_TO_SHIP", "PROCESSED", "COMPLETED"]
+        elif self.platform_name.lower() == "lazada":
+            return ["unpaid", "pending", "ready_to_ship", "packed", "shipped", "delivered"]
+        elif self.platform_name.lower() == "tiktok":
+            return ["UNPAID", "AWAITING_SHIPMENT", "AWAITING_COLLECTION", "COMPLETED"]
+        else:
+            return []
+
+    def _extract_order_ids(self, orders):
+        """Extract order IDs dari list orders"""
+        order_ids = []
+        for order in orders:
+            order_id = order.get("order_sn") or order.get(
+                "order_id") or order.get("id")
+            if order_id:
+                order_ids.append(order_id)
+        return order_ids
+
 
 class LazadaPlatformHandler(IPlatformHandler):
     MAX_STOCK = 99999
@@ -1814,14 +1938,15 @@ class LazadaPlatformHandler(IPlatformHandler):
     default_sheet_name = "Lazada Update"
 
     def __init__(
-        self,
-        config: IConfigManager,
-        api: IAPIClient,
-        product_manager: IProductManager,
-        order_manager: IOrderManager,
-        sheet_manager: ISheetManager,
-        fs_manager: FileSystemManager,
-    ):
+            self,
+            config: IConfigManager,
+            api: IAPIClient,
+            product_manager: IProductManager,
+            order_manager: IOrderManager,
+            sheet_manager: ISheetManager,
+            fs_manager: FileSystemManager,
+            google_sheets_manager=None):
+
         super().__init__(
             config,
             api,
@@ -1831,6 +1956,7 @@ class LazadaPlatformHandler(IPlatformHandler):
             fs_manager,
             "Lazada",
         )
+        self.google_sheets_manager = google_sheets_manager
 
     def auto_refresh_token(self):
         """Auto-refresh platform token if needed with detailed info"""
@@ -2605,6 +2731,130 @@ class LazadaPlatformHandler(IPlatformHandler):
         finally:
             self.sheet_manager.hide_sheet("Lazada Orders")
 
+    def export_orders_to_google_sheets(self, order_type, days=7):
+        """Export orders directly to Google Sheets dengan validasi lengkap"""
+        try:
+            self.logger.info(
+                f"🔄 Exporting {order_type} orders to Google Sheets for {days} days")
+
+            # Validasi Google Sheets Manager
+            if not hasattr(self, 'google_sheets_manager') or not self.google_sheets_manager:
+                self.logger.error("❌ Google Sheets Manager not available")
+                return False
+
+            if not self.google_sheets_manager.is_authenticated():
+                self.logger.error("❌ Google Sheets not authenticated")
+                return False
+
+            # Get spreadsheet ID from settings
+            spreadsheet_id = self.google_sheets_manager.settings.get(
+                "order_spreadsheet_id")
+
+            # Fallback ke wallet spreadsheet jika order spreadsheet tidak diatur
+            if not spreadsheet_id:
+                spreadsheet_id = self.google_sheets_manager.settings.get(
+                    "wallet_spreadsheet_id")
+                self.logger.warning(
+                    "⚠️ Order spreadsheet not configured, using wallet spreadsheet as fallback")
+
+            if not spreadsheet_id:
+                self.logger.error(
+                    "❌ No spreadsheet ID configured for order exports")
+                return False
+
+            self.logger.info(f"📊 Using spreadsheet: {spreadsheet_id}")
+
+            # Get orders based on type
+            if order_type == "ALL":
+                # Combine all order types
+                all_orders = []
+                statuses = self._get_order_statuses_for_platform()
+
+                for status in statuses:
+                    orders = self.order_manager.get_order_list(status, days)
+                    all_orders.extend(orders)
+
+                if not all_orders:
+                    self.logger.warning("⚠️ No orders found for export")
+                    return False
+
+                # Get order details
+                order_sn_list = self._extract_order_ids(all_orders)
+                order_details = self.order_manager.get_order_details(
+                    order_sn_list)
+
+                # Format data for export
+                formatted_data = self.order_manager.format_items_for_export(
+                    order_details)
+
+            else:
+                # Get specific order type
+                orders = self.order_manager.get_order_list(order_type, days)
+                if not orders:
+                    self.logger.warning(f"⚠️ No {order_type} orders found")
+                    return False
+
+                order_sn_list = self._extract_order_ids(orders)
+                order_details = self.order_manager.get_order_details(
+                    order_sn_list)
+                formatted_data = self.order_manager.format_items_for_export(
+                    order_details)
+
+            if not formatted_data:
+                self.logger.warning("⚠️ No formatted data to export")
+                return False
+
+            # Prepare headers
+            headers = ["Order SN", "SKU", "Product Name",
+                       "Variation", "Quantity", "Price", "Status"]
+            data_for_sheets = [headers] + formatted_data
+
+            # Create sheet name
+            sheet_name = f"{self.platform_name} {order_type} Orders"
+
+            # Upload to Google Sheets
+            success = self.google_sheets_manager.upload_to_sheet(
+                spreadsheet_id=spreadsheet_id,
+                sheet_name=sheet_name,
+                data=data_for_sheets
+            )
+
+            if success:
+                self.logger.info(
+                    f"✅ Successfully exported {len(formatted_data)} {order_type} orders to Google Sheets")
+                return True
+            else:
+                self.logger.error("❌ Failed to upload data to Google Sheets")
+                return False
+
+        except Exception as e:
+            self.logger.error(
+                f"❌ Error exporting orders to Google Sheets: {str(e)}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            return False
+
+    def _get_order_statuses_for_platform(self):
+        """Get order statuses berdasarkan platform"""
+        if self.platform_name.lower() == "shopee":
+            return ["UNPAID", "READY_TO_SHIP", "PROCESSED", "COMPLETED"]
+        elif self.platform_name.lower() == "lazada":
+            return ["unpaid", "pending", "ready_to_ship", "packed", "shipped", "delivered"]
+        elif self.platform_name.lower() == "tiktok":
+            return ["UNPAID", "AWAITING_SHIPMENT", "AWAITING_COLLECTION", "COMPLETED"]
+        else:
+            return []
+
+    def _extract_order_ids(self, orders):
+        """Extract order IDs dari list orders"""
+        order_ids = []
+        for order in orders:
+            order_id = order.get("order_sn") or order.get(
+                "order_id") or order.get("id")
+            if order_id:
+                order_ids.append(order_id)
+        return order_ids
+
 
 class TiktokPlatformHandler(IPlatformHandler):
     MAX_STOCK = 99999
@@ -2613,14 +2863,13 @@ class TiktokPlatformHandler(IPlatformHandler):
     default_sheet_name = "Tiktok Update"
 
     def __init__(
-        self,
-        config: IConfigManager,
-        api: IAPIClient,
-        product_manager: IProductManager,
-        order_manager: IOrderManager,
-        sheet_manager: ISheetManager,
-        fs_manager: FileSystemManager,
-    ):
+            self,
+            config: IConfigManager,
+            api: IAPIClient,
+            product_manager: IProductManager,
+            order_manager: IOrderManager,
+            sheet_manager: ISheetManager,
+            fs_manager: FileSystemManager, google_sheets_manager=None):
         super().__init__(
             config,
             api,
@@ -2630,6 +2879,7 @@ class TiktokPlatformHandler(IPlatformHandler):
             fs_manager,
             "Tiktok",
         )
+        self.google_sheets_manager = google_sheets_manager
 
     def auto_refresh_token(self):
         """Auto-refresh platform token if needed with detailed info"""
@@ -3259,3 +3509,127 @@ class TiktokPlatformHandler(IPlatformHandler):
             return False
         finally:
             self.sheet_manager.hide_sheet("Tiktok Orders")
+
+    def export_orders_to_google_sheets(self, order_type, days=7):
+        """Export orders directly to Google Sheets dengan validasi lengkap"""
+        try:
+            self.logger.info(
+                f"🔄 Exporting {order_type} orders to Google Sheets for {days} days")
+
+            # Validasi Google Sheets Manager
+            if not hasattr(self, 'google_sheets_manager') or not self.google_sheets_manager:
+                self.logger.error("❌ Google Sheets Manager not available")
+                return False
+
+            if not self.google_sheets_manager.is_authenticated():
+                self.logger.error("❌ Google Sheets not authenticated")
+                return False
+
+            # Get spreadsheet ID from settings
+            spreadsheet_id = self.google_sheets_manager.settings.get(
+                "order_spreadsheet_id")
+
+            # Fallback ke wallet spreadsheet jika order spreadsheet tidak diatur
+            if not spreadsheet_id:
+                spreadsheet_id = self.google_sheets_manager.settings.get(
+                    "wallet_spreadsheet_id")
+                self.logger.warning(
+                    "⚠️ Order spreadsheet not configured, using wallet spreadsheet as fallback")
+
+            if not spreadsheet_id:
+                self.logger.error(
+                    "❌ No spreadsheet ID configured for order exports")
+                return False
+
+            self.logger.info(f"📊 Using spreadsheet: {spreadsheet_id}")
+
+            # Get orders based on type
+            if order_type == "ALL":
+                # Combine all order types
+                all_orders = []
+                statuses = self._get_order_statuses_for_platform()
+
+                for status in statuses:
+                    orders = self.order_manager.get_order_list(status, days)
+                    all_orders.extend(orders)
+
+                if not all_orders:
+                    self.logger.warning("⚠️ No orders found for export")
+                    return False
+
+                # Get order details
+                order_sn_list = self._extract_order_ids(all_orders)
+                order_details = self.order_manager.get_order_details(
+                    order_sn_list)
+
+                # Format data for export
+                formatted_data = self.order_manager.format_items_for_export(
+                    order_details)
+
+            else:
+                # Get specific order type
+                orders = self.order_manager.get_order_list(order_type, days)
+                if not orders:
+                    self.logger.warning(f"⚠️ No {order_type} orders found")
+                    return False
+
+                order_sn_list = self._extract_order_ids(orders)
+                order_details = self.order_manager.get_order_details(
+                    order_sn_list)
+                formatted_data = self.order_manager.format_items_for_export(
+                    order_details)
+
+            if not formatted_data:
+                self.logger.warning("⚠️ No formatted data to export")
+                return False
+
+            # Prepare headers
+            headers = ["Order SN", "SKU", "Product Name",
+                       "Variation", "Quantity", "Price", "Status"]
+            data_for_sheets = [headers] + formatted_data
+
+            # Create sheet name
+            sheet_name = f"{self.platform_name} {order_type} Orders"
+
+            # Upload to Google Sheets
+            success = self.google_sheets_manager.upload_to_sheet(
+                spreadsheet_id=spreadsheet_id,
+                sheet_name=sheet_name,
+                data=data_for_sheets
+            )
+
+            if success:
+                self.logger.info(
+                    f"✅ Successfully exported {len(formatted_data)} {order_type} orders to Google Sheets")
+                return True
+            else:
+                self.logger.error("❌ Failed to upload data to Google Sheets")
+                return False
+
+        except Exception as e:
+            self.logger.error(
+                f"❌ Error exporting orders to Google Sheets: {str(e)}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            return False
+
+    def _get_order_statuses_for_platform(self):
+        """Get order statuses berdasarkan platform"""
+        if self.platform_name.lower() == "shopee":
+            return ["UNPAID", "READY_TO_SHIP", "PROCESSED", "COMPLETED"]
+        elif self.platform_name.lower() == "lazada":
+            return ["unpaid", "pending", "ready_to_ship", "packed", "shipped", "delivered"]
+        elif self.platform_name.lower() == "tiktok":
+            return ["UNPAID", "AWAITING_SHIPMENT", "AWAITING_COLLECTION", "COMPLETED"]
+        else:
+            return []
+
+    def _extract_order_ids(self, orders):
+        """Extract order IDs dari list orders"""
+        order_ids = []
+        for order in orders:
+            order_id = order.get("order_sn") or order.get(
+                "order_id") or order.get("id")
+            if order_id:
+                order_ids.append(order_id)
+        return order_ids

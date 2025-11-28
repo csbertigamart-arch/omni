@@ -21,7 +21,7 @@
             v-for="option in exportOptions"
             :key="option.value"
             class="option-card"
-            @click="$emit('execute-export-order', option.value)"
+            @click="executeOrderExport(option.value)"
           >
             <div class="option-icon">
               <i :class="option.icon"></i>
@@ -52,6 +52,7 @@
 import { computed } from "vue";
 import Dialog from "primevue/dialog";
 import Button from "primevue/button";
+import { useToast } from "primevue/usetoast";
 
 export default {
   name: "ExportOrdersModal",
@@ -69,8 +70,10 @@ export default {
       default: null,
     },
   },
-  emits: ["close", "execute-export-order"],
-  setup(props) {
+  emits: ["close", "execute-order-export"],
+  setup(props, { emit }) {
+    const toast = useToast();
+
     const exportOptions = computed(() => {
       const options = {
         shopee: [
@@ -173,12 +176,56 @@ export default {
       return options[props.platform] || [];
     });
 
+    const executeOrderExport = async (exportType) => {
+      try {
+        const response = await fetch("/api/execute-order-export", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            platform: props.platform,
+            order_type: exportType,
+            days: 7
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          toast.add({
+            severity: "success",
+            summary: "Success",
+            detail: result.message,
+            life: 5000,
+          });
+          emit("close");
+        } else {
+          toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: result.error || result.message,
+            life: 5000,
+          });
+        }
+      } catch (error) {
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: error.message,
+          life: 5000,
+        });
+      }
+    };
+
     return {
       exportOptions,
+      executeOrderExport,
     };
   },
 };
 </script>
+
 
 <style scoped>
 .custom-modal :deep(.p-dialog-header) {
@@ -383,3 +430,19 @@ export default {
   }
 }
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

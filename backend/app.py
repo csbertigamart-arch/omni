@@ -857,6 +857,7 @@ def google_create_spreadsheet():
         return jsonify({"success": False, "error": str(e)})
 
 
+# Di app.py - perbaiki route update-detailed
 @app.route("/api/google/settings/update-detailed", methods=["POST"])
 def google_settings_update_detailed():
     """Update detailed Google Sheets settings"""
@@ -867,9 +868,10 @@ def google_settings_update_detailed():
 
         wallet_spreadsheet_id = data.get("wallet_spreadsheet_id")
         shipping_spreadsheet_id = data.get("shipping_spreadsheet_id")
+        order_spreadsheet_id = data.get("order_spreadsheet_id")
 
         success = google_sheets_manager.update_detailed_settings(
-            wallet_spreadsheet_id, shipping_spreadsheet_id
+            wallet_spreadsheet_id, shipping_spreadsheet_id, order_spreadsheet_id
         )
 
         if success:
@@ -882,7 +884,6 @@ def google_settings_update_detailed():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-# Di app.py - tambahkan endpoint baru
 
 
 @app.route("/api/execute-sheets", methods=["POST"])
@@ -1045,12 +1046,12 @@ def google_sheets_refresh():
 
         print("🔄 API: Refreshing spreadsheet list...")
         spreadsheets = google_sheets_manager.refresh_spreadsheets()
-        
+
         # Debug information
         print(f"📊 API Response: {len(spreadsheets)} spreadsheets")
-        
+
         return jsonify({
-            "success": True, 
+            "success": True,
             "data": spreadsheets,
             "count": len(spreadsheets),
             "message": f"Refreshed {len(spreadsheets)} spreadsheets"
@@ -1060,6 +1061,120 @@ def google_sheets_refresh():
         import traceback
         traceback.print_exc()
         return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/execute-order-export", methods=["POST"])
+def execute_order_export():
+    """Execute order export to Google Sheets dengan spreadsheet fleksibel"""
+    try:
+        logger.info("📥 /api/execute-order-export endpoint called")
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "No JSON data provided"}), 400
+
+        platform = data.get("platform")
+        order_type = data.get("order_type")
+        days = data.get("days", 7)
+
+        logger.info(
+            f"🔄 Order export request: {platform} - {order_type} - {days} days")
+
+        if not ecommerce_app:
+            return jsonify({"success": False, "error": "Application not initialized"}), 500
+
+        # Mapping platform name to handler attribute
+        platform_mapping = {
+            "shopee": "shopee",
+            "lazada": "lazada",
+            "tiktok": "tiktok"
+        }
+
+        handler_name = platform_mapping.get(platform)
+        if not handler_name:
+            return jsonify({"success": False, "error": f"Invalid platform: {platform}"}), 400
+
+        platform_handler = getattr(ecommerce_app, handler_name, None)
+        if not platform_handler:
+            return jsonify({"success": False, "error": f"Platform handler not found: {platform}"}), 400
+
+        # Panggil method ekspor order yang baru
+        success = platform_handler.export_orders_to_google_sheets(
+            order_type, days)
+
+        if success:
+            return jsonify({
+                "success": True,
+                "message": f"Successfully exported {order_type} orders from {platform} to Google Sheets"
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": f"Failed to export {order_type} orders from {platform} to Google Sheets"
+            })
+
+    except Exception as e:
+        logger.error(f"❌ Error in execute_order_export: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/debug/order-export-test")
+def debug_order_export_test():
+    """Debug endpoint untuk testing order export"""
+    try:
+        if not ecommerce_app:
+            return jsonify({"success": False, "error": "App not initialized"})
+
+        # Test Shopee
+        shopee_success = ecommerce_app.shopee.export_orders_to_google_sheets(
+            "UNPAID", 1)
+
+        # Test settings
+        settings_status = {
+            "order_spreadsheet_id": google_sheets_manager.settings.get("order_spreadsheet_id"),
+            "shopee_handler_has_gsm": hasattr(ecommerce_app.shopee, 'google_sheets_manager'),
+            "shopee_export_method": hasattr(ecommerce_app.shopee, 'export_orders_to_google_sheets'),
+            "shopee_test_result": shopee_success
+        }
+
+        return jsonify({
+            "success": True,
+            "data": settings_status,
+            "message": "Order export debug completed"
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/debug/order-export-settings")
+def debug_order_export_settings():
+    """Debug endpoint untuk memeriksa pengaturan order export"""
+    try:
+        if not ecommerce_app:
+            return jsonify({"success": False, "error": "App not initialized"})
+
+        debug_info = {
+            "google_sheets_settings": google_sheets_manager.settings,
+            "shopee_handler_has_gsm": hasattr(ecommerce_app.shopee, 'google_sheets_manager'),
+            "lazada_handler_has_gsm": hasattr(ecommerce_app.lazada, 'google_sheets_manager'),
+            "tiktok_handler_has_gsm": hasattr(ecommerce_app.tiktok, 'google_sheets_manager'),
+            "shopee_gsm_authenticated": ecommerce_app.shopee.google_sheets_manager.is_authenticated() if hasattr(ecommerce_app.shopee, 'google_sheets_manager') else False,
+            "order_spreadsheet_id": google_sheets_manager.settings.get("order_spreadsheet_id"),
+            "wallet_spreadsheet_id": google_sheets_manager.settings.get("wallet_spreadsheet_id"),
+            "shipping_spreadsheet_id": google_sheets_manager.settings.get("shipping_spreadsheet_id")
+        }
+
+        return jsonify({
+            "success": True,
+            "data": debug_info,
+            "message": "Order export settings debug information"
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 
 connection_monitor = threading.Thread(target=monitor_connections, daemon=True)
 connection_monitor.start()

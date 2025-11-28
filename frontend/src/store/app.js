@@ -256,7 +256,19 @@ export const useAppStore = defineStore("app", () => {
     closeModal("token");
     return result;
   }
-
+  async function executeOrderExport(platform, orderType, days = 7) {
+      try {
+          const response = await apiService.post("/execute-order-export", {
+              platform: platform, // Pastikan ini 'shopee', bukan 'shopee_handler'
+              order_type: orderType,
+              days: days
+          });
+          return response;
+      } catch (error) {
+          console.error("Order export failed:", error);
+          throw error;
+      }
+  }
   // Wallet operations
   async function getWalletTransactions(params) {
     return await executeOperation("get_wallet_transactions", params);
@@ -435,6 +447,7 @@ export const useAppStore = defineStore("app", () => {
     processShippingFee,
     updatePrice,
     exportOrders,
+    executeOrderExport,
     debugCheckFunctions,
     addLog,
     clearLogs,

@@ -16,9 +16,9 @@ class GoogleSheetsManager:
 
     # Gunakan scope yang lebih spesifik
     SCOPES = [
-    'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/drive.file',
-    'https://www.googleapis.com/auth/drive.readonly'
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/drive.file',
+        'https://www.googleapis.com/auth/drive.readonly'
     ]
 
     def __init__(self, fs_manager: FileSystemManager):
@@ -46,9 +46,30 @@ class GoogleSheetsManager:
                 "selected_sheet": "",
                 "manual_mode": False,
                 "available_spreadsheets": [],
-                "available_worksheets": []
+                "available_worksheets": [],
+                "wallet_spreadsheet_id": "",
+                "shipping_spreadsheet_id": "",
+                "order_spreadsheet_id": ""  # TAMBAH INI
             }
             self._save_settings()
+
+    # Di backend/google_sheets_manager.py - perbaiki method update_detailed_settings
+    def update_detailed_settings(self, wallet_spreadsheet_id, shipping_spreadsheet_id, order_spreadsheet_id):
+        """Update detailed spreadsheet settings"""
+        try:
+            self.settings.update({
+                "wallet_spreadsheet_id": wallet_spreadsheet_id,
+                "shipping_spreadsheet_id": shipping_spreadsheet_id,
+                "order_spreadsheet_id": order_spreadsheet_id
+            })
+
+            self._save_settings()
+            print(
+                f"✅ Settings updated - Wallet: {wallet_spreadsheet_id}, Shipping: {shipping_spreadsheet_id}, Order: {order_spreadsheet_id}")
+            return True
+        except Exception as e:
+            print(f"❌ Error updating detailed settings: {str(e)}")
+            return False
 
     def _save_settings(self):
         """Save Google Sheets settings"""
@@ -255,7 +276,8 @@ class GoogleSheetsManager:
             ).execute()
 
             spreadsheets = results.get('files', [])
-            print(f"📊 Found {len(spreadsheets)} spreadsheets from Google Drive")
+            print(
+                f"📊 Found {len(spreadsheets)} spreadsheets from Google Drive")
 
             # Update settings
             self.settings["available_spreadsheets"] = [
@@ -276,6 +298,7 @@ class GoogleSheetsManager:
             import traceback
             traceback.print_exc()
             # Don't clear existing data on error
+
     def get_spreadsheets(self) -> List[Dict]:
         """Get list of available spreadsheets"""
         if not self.is_authenticated():
@@ -440,23 +463,6 @@ class GoogleSheetsManager:
             print(f"❌ Error creating spreadsheet: {str(e)}")
             return None
 
-    def update_detailed_settings(self, wallet_spreadsheet_id, shipping_spreadsheet_id):
-        """Update detailed spreadsheet settings"""
-        try:
-            self.settings.update({
-                "wallet_spreadsheet_id": wallet_spreadsheet_id,
-                "shipping_spreadsheet_id": shipping_spreadsheet_id,
-                "manual_mode": False
-            })
-
-            self._save_settings()
-            print(
-                f"✅ Settings updated - Wallet: {wallet_spreadsheet_id}, Shipping: {shipping_spreadsheet_id}")
-            return True
-        except Exception as e:
-            print(f"❌ Error updating detailed settings: {str(e)}")
-            return False
-
     def upload_to_sheet(self, spreadsheet_id, sheet_name, data):
         """Upload data to specified spreadsheet and worksheet - FIXED VERSION"""
         try:
@@ -579,7 +585,6 @@ class GoogleSheetsManager:
             print(f"❌ Error uploading to Google Sheets: {str(e)}")
             return False
 
-
     def refresh_spreadsheets(self) -> List[Dict]:
         """Refresh and reload the list of available spreadsheets - FIXED VERSION"""
         try:
@@ -588,7 +593,7 @@ class GoogleSheetsManager:
                 return []
 
             print("🔄 Refreshing spreadsheet list from Google Drive...")
-            
+
             # Jangan clear data dulu, load dulu kemudian update
             try:
                 # Reload from Google Drive
@@ -600,7 +605,8 @@ class GoogleSheetsManager:
                 ).execute()
 
                 spreadsheets = results.get('files', [])
-                print(f"📊 Found {len(spreadsheets)} spreadsheets from Google Drive")
+                print(
+                    f"📊 Found {len(spreadsheets)} spreadsheets from Google Drive")
 
                 # Update settings dengan data baru
                 self.settings["available_spreadsheets"] = [
@@ -614,17 +620,20 @@ class GoogleSheetsManager:
                 ]
 
                 self._save_settings()
-                
+
                 refreshed_count = len(spreadsheets)
-                print(f"✅ Successfully refreshed {refreshed_count} spreadsheets")
-                
+                print(
+                    f"✅ Successfully refreshed {refreshed_count} spreadsheets")
+
                 return self.settings["available_spreadsheets"]
-                
+
             except Exception as load_error:
-                print(f"❌ Error loading spreadsheets from Google Drive: {str(load_error)}")
+                print(
+                    f"❌ Error loading spreadsheets from Google Drive: {str(load_error)}")
                 # Return existing data if available, rather than empty array
                 existing_data = self.settings.get("available_spreadsheets", [])
-                print(f"🔄 Returning existing data: {len(existing_data)} spreadsheets")
+                print(
+                    f"🔄 Returning existing data: {len(existing_data)} spreadsheets")
                 return existing_data
 
         except Exception as e:

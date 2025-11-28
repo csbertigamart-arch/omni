@@ -10,7 +10,7 @@
     "run-improved.bat",
     "run-backend.bat",
     "run-frontend.bat",
-    "platform_handlers.py",
+    "product_managers.py",
     "api_clients.py"
   ],
 

@@ -223,6 +223,69 @@
             </div>
           </div>
 
+
+
+          <!-- Di template, bagian Order Spreadsheet -->
+          <div class="form-group">
+              <label class="form-label">
+                  <i class="pi pi-shopping-cart"></i>
+                  Order Export Spreadsheet
+              </label>
+              <div class="spreadsheet-selector">
+                  <div class="dropdown-container">
+                      <Dropdown
+                          v-model="selectedOrderSpreadsheet"
+                          :options="spreadsheets"
+                          optionLabel="name"
+                          optionValue="id"
+                          placeholder="Select spreadsheet for order exports"
+                          class="w-full spreadsheet-dropdown"
+                          :filter="false"
+                          :showClear="true"
+                          :disabled="spreadsheets.length === 0"
+                      >
+                          <template #value="slotProps">
+                              <div v-if="slotProps.value" class="selected-spreadsheet">
+                                  <i class="pi pi-file-excel"></i>
+                                  <span>{{ getSpreadsheetName(slotProps.value) }}</span>
+                              </div>
+                              <span v-else>{{ slotProps.placeholder }}</span>
+                          </template>
+                          <template #option="slotProps">
+                              <div class="spreadsheet-option">
+                                  <i class="pi pi-file-excel"></i>
+                                  <div class="option-details">
+                                      <div class="option-name">{{ slotProps.option.name }}</div>
+                                      <div class="option-id">{{ slotProps.option.id }}</div>
+                                  </div>
+                              </div>
+                          </template>
+                      </Dropdown>
+                      <small class="helper-text">
+                          Spreadsheet untuk menyimpan ekspor order dari semua platform (Shopee, Lazada, Tiktok)
+                          <br><strong>Rekomendasi:</strong> Gunakan spreadsheet yang sama dengan Wallet untuk konsistensi
+                      </small>
+                  </div>
+
+                  <div class="spreadsheet-actions">
+                      <Button
+                          icon="pi pi-refresh"
+                          label="Refresh List"
+                          @click="refreshSpreadsheets"
+                          :loading="loading"
+                          class="p-button-outlined p-button-sm refresh-btn"
+                          :disabled="loading"
+                      />
+                      <Button
+                          icon="pi pi-copy"
+                          label="Use Same as Wallet"
+                          @click="selectedOrderSpreadsheet = selectedWalletSpreadsheet"
+                          :disabled="!selectedWalletSpreadsheet"
+                          class="p-button-outlined p-button-sm copy-btn"
+                      />
+                  </div>
+              </div>
+          </div>
           <div class="form-actions">
             <Button
               icon="pi pi-save"
@@ -332,7 +395,7 @@ export default {
   setup() {
     const toast = useToast();
     const googleSheetsStore = useGoogleSheetsStore();
-
+    const selectedOrderSpreadsheet = ref("");
     const authStatus = ref({
       authenticated: false,
       settings: {},
@@ -390,36 +453,39 @@ export default {
     };
 
     const loadAuthStatus = async () => {
-      try {
-        loading.value = true;
-        const response = await fetch("/api/google/auth/status");
-        const data = await response.json();
-
-        if (data.success) {
-          authStatus.value = data.data;
-          // Load existing configuration
-          if (data.data.settings.wallet_spreadsheet_id) {
-            selectedWalletSpreadsheet.value =
-              data.data.settings.wallet_spreadsheet_id;
-          }
-          if (data.data.settings.shipping_spreadsheet_id) {
-            selectedShippingSpreadsheet.value =
-              data.data.settings.shipping_spreadsheet_id;
-          }
+        try {
+            loading.value = true;
+            const response = await fetch("/api/google/auth/status");
+            const data = await response.json();
+            
+            if (data.success) {
+                authStatus.value = data.data;
+                // Load existing configuration untuk semua spreadsheet
+                if (data.data.settings.wallet_spreadsheet_id) {
+                    selectedWalletSpreadsheet.value = data.data.settings.wallet_spreadsheet_id;
+                }
+                if (data.data.settings.shipping_spreadsheet_id) {
+                    selectedShippingSpreadsheet.value = data.data.settings.shipping_spreadsheet_id;
+                }
+                if (data.data.settings.order_spreadsheet_id) {
+                    selectedOrderSpreadsheet.value = data.data.settings.order_spreadsheet_id;
+                } else {
+                    // Jika order_spreadsheet_id belum ada, gunakan wallet sebagai fallback
+                    selectedOrderSpreadsheet.value = data.data.settings.wallet_spreadsheet_id;
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load auth status:", error);
+            toast.add({
+                severity: "error",
+                summary: "Error",
+                detail: "Failed to load authentication status",
+                life: 5000,
+            });
+        } finally {
+            loading.value = false;
         }
-      } catch (error) {
-        console.error("Failed to load auth status:", error);
-        toast.add({
-          severity: "error",
-          summary: "Error",
-          detail: "Failed to load authentication status",
-          life: 5000,
-        });
-      } finally {
-        loading.value = false;
-      }
     };
-
     const loadSpreadsheets = async () => {
       try {
         loading.value = true;
@@ -512,51 +578,62 @@ export default {
       }
     };
 
+
     const saveConfiguration = async () => {
-      try {
-        saving.value = true;
-        const response = await fetch("/api/google/settings/update-detailed", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            wallet_spreadsheet_id: selectedWalletSpreadsheet.value,
-            shipping_spreadsheet_id: selectedShippingSpreadsheet.value,
-          }),
-        });
+        try {
+            saving.value = true;
+            
+            // Validasi: pastikan setidaknya satu spreadsheet dipilih
+            if (!selectedWalletSpreadsheet.value && !selectedShippingSpreadsheet.value && !selectedOrderSpreadsheet.value) {
+                throw new Error("Please select at least one spreadsheet");
+            }
 
-        const data = await response.json();
+            const response = await fetch("/api/google/settings/update-detailed", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    wallet_spreadsheet_id: selectedWalletSpreadsheet.value,
+                    shipping_spreadsheet_id: selectedShippingSpreadsheet.value,
+                    order_spreadsheet_id: selectedOrderSpreadsheet.value
+                }),
+            });
 
-        if (data.success) {
-          saveResult.value = {
-            success: true,
-            message: data.message,
-          };
-          toast.add({
-            severity: "success",
-            summary: "Success",
-            detail: data.message,
-            life: 5000,
-          });
-        } else {
-          throw new Error(data.error || "Failed to save configuration");
+            const data = await response.json();
+
+            if (data.success) {
+                saveResult.value = {
+                    success: true,
+                    message: data.message,
+                };
+                toast.add({
+                    severity: "success",
+                    summary: "Success",
+                    detail: data.message,
+                    life: 5000,
+                });
+                
+                // Refresh status untuk mendapatkan settings terbaru
+                await loadAuthStatus();
+            } else {
+                throw new Error(data.error || "Failed to save configuration");
+            }
+        } catch (error) {
+            console.error("Failed to save configuration:", error);
+            saveResult.value = {
+                success: false,
+                message: error.message,
+            };
+            toast.add({
+                severity: "error",
+                summary: "Error",
+                detail: error.message,
+                life: 5000,
+            });
+        } finally {
+            saving.value = false;
         }
-      } catch (error) {
-        console.error("Failed to save configuration:", error);
-        saveResult.value = {
-          success: false,
-          message: error.message,
-        };
-        toast.add({
-          severity: "error",
-          summary: "Error",
-          detail: error.message,
-          life: 5000,
-        });
-      } finally {
-        saving.value = false;
-      }
     };
 
     const testConnections = async () => {
