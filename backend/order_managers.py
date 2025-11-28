@@ -127,9 +127,9 @@ class BaseOrderManager(IOrderManager):
         for i in range(0, len(order_ids), self.BATCH_SIZE):
             batch = order_ids[i: i + self.BATCH_SIZE]
 
-            self.logger.info(
-                f"Making request to {endpoint} with {len(batch)} IDs: {batch}"
-            )
+            # self.logger.info(
+            #     f"Making request to {endpoint} with {len(batch)} IDs: {batch}"
+            # )
 
             params = {
                 id_field: ",".join(batch),
@@ -142,8 +142,10 @@ class BaseOrderManager(IOrderManager):
                 elapsed = time.time() - start_time
 
                 self.logger.info(f"API call completed in {elapsed:.2f}s")
-                self.logger.debug(f"Full API response: {response}")
 
+                request_id = response.get(
+                    "request_id", "Not available") if response else "No response"
+                self.logger.info(f"📝 Request ID: {request_id}")
                 if not response or not isinstance(response, dict):
                     self.logger.error(
                         f"Invalid response structure: {response}")
