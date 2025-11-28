@@ -1175,6 +1175,26 @@ def debug_order_export_settings():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+# Tambahkan di app.py - route debug khusus
+
+
+@app.route("/api/debug/sheets-settings")
+def debug_sheets_settings():
+    """Debug endpoint untuk memeriksa settings Google Sheets"""
+    try:
+        current_settings = google_sheets_manager.settings
+        return jsonify({
+            "success": True,
+            "data": {
+                "wallet_spreadsheet_id": current_settings.get("wallet_spreadsheet_id"),
+                "shipping_spreadsheet_id": current_settings.get("shipping_spreadsheet_id"),
+                "order_spreadsheet_id": current_settings.get("order_spreadsheet_id"),
+                "all_settings": current_settings
+            }
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 
 connection_monitor = threading.Thread(target=monitor_connections, daemon=True)
 connection_monitor.start()

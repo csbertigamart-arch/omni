@@ -209,12 +209,11 @@
             </div>
           </div>
 
-          <!-- Di template, perbaiki bagian Order Spreadsheet -->
+          <!-- Order Export Spreadsheet - PERBAIKAN -->
           <div class="form-group">
             <label class="form-label">
               <i class="pi pi-shopping-cart"></i>
               Order Export Spreadsheet
-              <span class="optional-badge">(Optional)</span>
             </label>
             <div class="spreadsheet-selector">
               <div class="dropdown-container">
@@ -226,16 +225,13 @@
                   placeholder="Select spreadsheet for order exports"
                   class="w-full spreadsheet-dropdown"
                   :filter="false"
-                  :showClear="true"
+                  :showClear="false"
                   :disabled="spreadsheets.length === 0"
                 >
                   <template #value="slotProps">
                     <div v-if="slotProps.value" class="selected-spreadsheet">
                       <i class="pi pi-file-excel"></i>
                       <span>{{ getSpreadsheetName(slotProps.value) }}</span>
-                      <span v-if="slotProps.value === selectedWalletSpreadsheet" class="same-as-wallet-badge">
-                        (Same as Wallet)
-                      </span>
                     </div>
                     <span v-else>{{ slotProps.placeholder }}</span>
                   </template>
@@ -265,18 +261,11 @@
                   :disabled="loading"
                 />
                 <Button
-                  icon="pi pi-copy"
-                  label="Use Wallet"
-                  @click="selectedOrderSpreadsheet = selectedWalletSpreadsheet"
-                  :disabled="!selectedWalletSpreadsheet"
-                  class="p-button-outlined p-button-sm copy-btn"
-                />
-                <Button
-                  icon="pi pi-times"
-                  label="Clear"
-                  @click="selectedOrderSpreadsheet = ''"
-                  :disabled="!selectedOrderSpreadsheet"
-                  class="p-button-outlined p-button-sm clear-btn"
+                  icon="pi pi-plus"
+                  label="Create New"
+                  @click="createNewSpreadsheet('order')"
+                  :loading="creatingSpreadsheet"
+                  class="p-button-outlined p-button-sm create-btn"
                 />
               </div>
             </div>
@@ -382,7 +371,6 @@ export default {
   setup() {
     const toast = useToast();
     const googleSheetsStore = useGoogleSheetsStore();
-    const selectedOrderSpreadsheet = ref('');
     const authStatus = ref({
       authenticated: false,
       settings: {},
@@ -402,15 +390,16 @@ export default {
     const showCreateDialog = ref(false);
     const createFor = ref('wallet');
     const newSpreadsheetName = ref('');
+    const selectedOrderSpreadsheet = ref(authStatus.value.settings?.order_spreadsheet_id || '');
 
     const suggestedName = computed(() => {
       const baseName = createFor.value === 'wallet' ? 'Wallet_Reports' : 'Shipping_Fee_Reports';
       const timestamp = new Date().toISOString().split('T')[0];
       return `${baseName}_${timestamp}`;
     });
-
+    
     // Dalam setup() di GoogleSheetsSettings.vue
-
+    
     const refreshSpreadsheets = async () => {
       try {
         // Gunakan store Google Sheets untuk refresh
@@ -533,11 +522,13 @@ export default {
           // Add to spreadsheets list
           spreadsheets.value.push(data.data);
 
-          // Auto-select the new spreadsheet
+          // Auto-select the new spreadsheet based on createFor type
           if (createFor.value === 'wallet') {
             selectedWalletSpreadsheet.value = data.data.id;
-          } else {
+          } else if (createFor.value === 'shipping') {
             selectedShippingSpreadsheet.value = data.data.id;
+          } else if (createFor.value === 'order') {
+            selectedOrderSpreadsheet.value = data.data.id; // INI YANG PERLU DITAMBAH
           }
 
           showCreateDialog.value = false;
@@ -556,34 +547,47 @@ export default {
       } finally {
         creatingSpreadsheet.value = false;
       }
-    };
+    };;
 
+    // Di method saveConfiguration - tambahkan logging detail
     const saveConfiguration = async () => {
       try {
         saving.value = true;
 
-        // Validasi: pastikan setidaknya satu spreadsheet dipilih
-        if (
-          !selectedWalletSpreadsheet.value &&
-          !selectedShippingSpreadsheet.value &&
-          !selectedOrderSpreadsheet.value
-        ) {
+        // DEBUG: Log semua nilai sebelum dikirim
+        console.log('🔄 [FRONTEND-DEBUG] Data to save:', {
+          wallet: selectedWalletSpreadsheet.value,
+          shipping: selectedShippingSpreadsheet.value,
+          order: selectedOrderSpreadsheet.value,
+          wallet_name: getSpreadsheetName(selectedWalletSpreadsheet.value),
+          shipping_name: getSpreadsheetName(selectedShippingSpreadsheet.value),
+          order_name: getSpreadsheetName(selectedOrderSpreadsheet.value)
+        });
+
+        // Validasi
+        if (!selectedWalletSpreadsheet.value && !selectedShippingSpreadsheet.value && !selectedOrderSpreadsheet.value) {
+          console.log('❌ [FRONTEND-DEBUG] No spreadsheets selected');
           throw new Error('Please select at least one spreadsheet');
         }
+
+        const payload = {
+          wallet_spreadsheet_id: selectedWalletSpreadsheet.value,
+          shipping_spreadsheet_id: selectedShippingSpreadsheet.value,
+          order_spreadsheet_id: selectedOrderSpreadsheet.value
+        };
+
+        console.log('📤 [FRONTEND-DEBUG] Sending payload:', payload);
 
         const response = await fetch('/api/google/settings/update-detailed', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            wallet_spreadsheet_id: selectedWalletSpreadsheet.value,
-            shipping_spreadsheet_id: selectedShippingSpreadsheet.value,
-            order_spreadsheet_id: selectedOrderSpreadsheet.value,
-          }),
+          body: JSON.stringify(payload),
         });
 
         const data = await response.json();
+        console.log('📥 [FRONTEND-DEBUG] Server response:', data);
 
         if (data.success) {
           saveResult.value = {
@@ -596,14 +600,12 @@ export default {
             detail: data.message,
             life: 5000,
           });
-
-          // Refresh status untuk mendapatkan settings terbaru
           await loadAuthStatus();
         } else {
           throw new Error(data.error || 'Failed to save configuration');
         }
       } catch (error) {
-        console.error('Failed to save configuration:', error);
+        console.error('❌ [FRONTEND-DEBUG] Save failed:', error);
         saveResult.value = {
           success: false,
           message: error.message,
@@ -618,7 +620,6 @@ export default {
         saving.value = false;
       }
     };
-
     const testConnections = async () => {
       try {
         testing.value = true;
@@ -798,10 +799,20 @@ export default {
       });
     });
 
-    watch(selectedOrderSpreadsheet, (newValue) => {
-      console.log('Order spreadsheet changed to:', newValue);
-      saveResult.value = null;
+    // Di setup() - tambahkan watch untuk debugging
+    watch(selectedOrderSpreadsheet, (newVal, oldVal) => {
+      console.log('🔄 [ORDER-DROPDOWN] selectedOrderSpreadsheet changed:', {
+        old: oldVal,
+        new: newVal,
+        name: getSpreadsheetName(newVal)
+      });
     });
+
+    // Juga watch untuk spreadsheets list
+    watch(spreadsheets, (newVal) => {
+      console.log('📊 [SPREADSHEETS-LIST] Updated:', newVal.length, 'items');
+      console.log('📋 [SPREADSHEETS-LIST] First 3 items:', newVal.slice(0, 3));
+    }, { immediate: true });
 
     // Juga perbaiki watch yang existing
     watch([selectedWalletSpreadsheet, selectedShippingSpreadsheet], () => {
@@ -1230,22 +1241,5 @@ export default {
   margin-left: 8px;
 }
 
-.same-as-wallet-badge {
-  background: #e3f2fd;
-  color: #1976d2;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  margin-left: 8px;
-}
 
-.clear-btn {
-  color: #dc3545 !important;
-  border-color: #dc3545 !important;
-}
-
-.clear-btn:hover {
-  background: #dc3545 !important;
-  color: white !important;
-}
 </style>
